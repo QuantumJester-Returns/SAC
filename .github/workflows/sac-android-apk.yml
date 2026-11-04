@@ -49,19 +49,23 @@ jobs:
           SAC_ANDROID_KEYSTORE_BASE64: ${{ secrets.SAC_ANDROID_KEYSTORE_BASE64 }}
           SAC_ANDROID_KEYSTORE_PASSWORD: ${{ secrets.SAC_ANDROID_KEYSTORE_PASSWORD }}
           SAC_ANDROID_KEY_ALIAS: ${{ secrets.SAC_ANDROID_KEY_ALIAS }}
+          SAC_ANDROID_KEY_PASSWORD: ${{ secrets.SAC_ANDROID_KEY_PASSWORD }}
         run: |
           set -euo pipefail
           test -n "$SAC_ANDROID_KEYSTORE_BASE64" || { echo "Missing SAC_ANDROID_KEYSTORE_BASE64 repository secret"; exit 1; }
           test -n "$SAC_ANDROID_KEYSTORE_PASSWORD" || { echo "Missing SAC_ANDROID_KEYSTORE_PASSWORD repository secret"; exit 1; }
           test -n "$SAC_ANDROID_KEY_ALIAS" || { echo "Missing SAC_ANDROID_KEY_ALIAS repository secret"; exit 1; }
+          test -n "$SAC_ANDROID_KEY_PASSWORD" || { echo "Missing SAC_ANDROID_KEY_PASSWORD repository secret"; exit 1; }
           mkdir -p "$RUNNER_TEMP/sac-signing"
-          printf '%s' "$SAC_ANDROID_KEYSTORE_BASE64" | base64 --decode > "$RUNNER_TEMP/sac-signing/SAC-Android-Signing-Key.jks"
-          keytool -list -keystore "$RUNNER_TEMP/sac-signing/SAC-Android-Signing-Key.jks" -storepass "$SAC_ANDROID_KEYSTORE_PASSWORD" -alias "$SAC_ANDROID_KEY_ALIAS" >/dev/null
+          KEYSTORE="$RUNNER_TEMP/sac-signing/SAC-Android-Signing-Key.jks"
+          printf '%s' "$SAC_ANDROID_KEYSTORE_BASE64" | base64 --decode > "$KEYSTORE"
+          keytool -list -keystore "$KEYSTORE" -storepass "$SAC_ANDROID_KEYSTORE_PASSWORD" -alias "$SAC_ANDROID_KEY_ALIAS" >/dev/null
+          # Godot's Android exporter exposes one password field. Align the private-key
+          # password with the keystore password on this ephemeral runner copy.
+          keytool -keypasswd -keystore "$KEYSTORE" -storepass "$SAC_ANDROID_KEYSTORE_PASSWORD" -alias "$SAC_ANDROID_KEY_ALIAS" -keypass "$SAC_ANDROID_KEY_PASSWORD" -new "$SAC_ANDROID_KEYSTORE_PASSWORD"
           {
-            echo "GODOT_ANDROID_KEYSTORE_DEBUG_PATH=$RUNNER_TEMP/sac-signing/SAC-Android-Signing-Key.jks"
+            echo "GODOT_ANDROID_KEYSTORE_DEBUG_PATH=$KEYSTORE"
             echo "GODOT_ANDROID_KEYSTORE_DEBUG_USER=$SAC_ANDROID_KEY_ALIAS"
-            # Godot's Android exporter uses one password; the keystore's key password
-            # was aligned with its store password for compatibility.
             echo "GODOT_ANDROID_KEYSTORE_DEBUG_PASSWORD=$SAC_ANDROID_KEYSTORE_PASSWORD"
           } >> "$GITHUB_ENV"
 
