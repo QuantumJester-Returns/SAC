@@ -66,7 +66,7 @@ func _build_water() -> void:
 func _build_player() -> void:
 	player = CharacterBody3D.new()
 	player.name = "Player"
-	player.position = Vector3(0.0, PLAYER_HEIGHT * 0.5, 0.0)
+	player.position = Vector3(-3.5, PLAYER_HEIGHT * 0.5, 0.0)
 	add_child(player)
 
 	var body := MeshInstance3D.new()
@@ -93,16 +93,16 @@ func _build_player() -> void:
 	camera_pivot.position = Vector3(0.0, 1.2, 0.0)
 	player.add_child(camera_pivot)
 	var camera := Camera3D.new()
-	camera.position = Vector3(0.0, 3.0, 8.5)
+	camera.position = Vector3(-1.2, 1.7, 8.5)
 	camera.fov = 68.0
 	camera.current = true
 	camera_pivot.add_child(camera)
-	camera.look_at_from_position(camera.position, Vector3(0.0, 1.0, -5.0), Vector3.UP)
+	camera.look_at(Vector3(0.0, 1.0, -12.0), Vector3.UP)
 
 func _build_opponent_marker() -> void:
 	var opponent := MeshInstance3D.new()
 	opponent.name = "DistantDuelistPlaceholder"
-	opponent.position = Vector3(0.0, PLAYER_HEIGHT * 0.5, -28.0)
+	opponent.position = Vector3(3.5, PLAYER_HEIGHT * 0.5, -30.0)
 	var capsule := CapsuleMesh.new()
 	capsule.height = PLAYER_HEIGHT
 	capsule.radius = 0.25
@@ -158,6 +158,8 @@ func _physics_process(delta: float) -> void:
 	player.velocity.x = direction.x * 5.0
 	player.velocity.z = direction.z * 5.0
 	player.velocity.y = 0.0
+	if direction.length_squared() > 0.01:
+		player.rotation.y = atan2(direction.x, direction.z)
 	player.move_and_slide()
 	ripple_cooldown = maxf(0.0, ripple_cooldown - delta)
 	if player.position.distance_to(last_ripple_position) > 0.45 and ripple_cooldown <= 0.0:
