@@ -89,7 +89,7 @@ jobs:
           mkdir -p Godot/build
           sed -i "s/^version\/code=.*/version\/code=$GITHUB_RUN_NUMBER/" Godot/export_presets.cfg
           godot-bin/Godot_v4.4.1-stable_linux.x86_64 --headless --editor --path Godot --quit
-          godot-bin/Godot_v4.4.1-stable_linux.x86_64 --headless --path Godot --export-debug "Android" Godot/build/SAC-Android-debug.apk
+          godot-bin/Godot_v4.4.1-stable_linux.x86_64 --headless --path Godot --export-debug "Android" build/SAC-Android-debug.apk
 
       - name: Verify APK output
         run: |
