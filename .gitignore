@@ -9,16 +9,30 @@ Saved/
 
 # Build outputs
 Build/
+Releases/
+*.apk
+*.aab
+*.obb
+
+# Android signing material — NEVER COMMIT
+*.jks
+*.keystore
+key.properties
+keystore.properties
+
+# Build outputs and local secrets
+*.log
+.env
+.env.*
+!.env.example
+*.tmp
+*.bak
+*.swp
 
 # Operating system files
 .DS_Store
 Thumbs.db
 Desktop.ini
-
-# Logs and crash reports
-*.log
-crashinfo/
-Crashes/
 
 # IDE and user-specific files
 *.sln
@@ -29,7 +43,6 @@ Crashes/
 *.VC.db
 *.VC.VC.opendb
 
-# Temporary files
-*.tmp
-*.bak
-*.swp
+# Crash reports
+crashinfo/
+Crashes/
