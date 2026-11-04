@@ -1,0 +1,20 @@
+; Sea Among The Clouds
+; Clean recovery project. This is intentionally separate from legacy Godot/.
+
+config_version=5
+
+[application]
+config/name="Sea Among The Clouds"
+run/main_scene="res://scenes/recovery_entry.tscn"
+
+[rendering]
+renderer/rendering_method="gl_compatibility"
+renderer/rendering_method.mobile="gl_compatibility"
+
+[display]
+window/size/viewport_width=1280
+window/size/viewport_height=720
+window/handheld/orientation=1
+
+[physics]
+3d/default_gravity=9.8
