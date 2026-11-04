@@ -36,7 +36,6 @@ jobs:
             "Content/SourceAssets/Water/SAC_WaterRippleNormal.hlsl"
             "Docs/WATER_MATERIAL_IMPLEMENTATION.md"
             "Docs/ENVIRONMENT_MILESTONE_01.md"
-            "Docs/CLOUD_FIELD_ACTOR.md",
             "Docs/CLOUD_MESH_UPGRADE_02.md",
             "Tools/generate_cloud_meshes.py"
           )
