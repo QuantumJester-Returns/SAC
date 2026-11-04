@@ -133,8 +133,11 @@ func _build_player() -> void:
         character.name = "CharacterModel"
         player.add_child(character)
         var animation_player := _find_animation_player(character)
-        if animation_player and animation_player.has_animation("Armature|mixamo.com|Layer0"):
-            animation_player.play("Armature|mixamo.com|Layer0")
+        if animation_player:
+            if animation_player.has_animation("Idle"):
+                animation_player.play("Idle")
+            elif animation_player.get_animation_list().size() > 0:
+                animation_player.play(animation_player.get_animation_list()[0])
     var camera := Camera3D.new()
     camera.name = "Camera3D"
     camera.position = Vector3(0.0, 3.0, 7.2)
