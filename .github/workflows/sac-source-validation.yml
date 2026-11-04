@@ -27,6 +27,8 @@ jobs:
             "Source/SAC/SAC.Build.cs"
             "Source/SAC/SACEnvironmentController.h"
             "Source/SAC/SACEnvironmentController.cpp"
+            "Source/SAC/SACCloudField.h"
+            "Source/SAC/SACCloudField.cpp"
             "Source/SAC/SACWaterRippleComponent.h"
             "Source/SAC/SACWaterRippleComponent.cpp"
             "Source/SAC/SACOceanSurface.h"
@@ -34,6 +36,7 @@ jobs:
             "Content/SourceAssets/Water/SAC_WaterRippleNormal.hlsl"
             "Docs/WATER_MATERIAL_IMPLEMENTATION.md"
             "Docs/ENVIRONMENT_MILESTONE_01.md"
+            "Docs/CLOUD_FIELD_ACTOR.md"
           )
           for file in "${required_files[@]}"; do
             if [[ ! -s "$file" ]]; then
@@ -83,3 +86,24 @@ jobs:
         run: |
           echo "Source and contract checks passed."
           echo "This runner does not contain Unreal Engine; it does not compile SAC or package an APK."
+
+      - name: Check layered cloud field source contract
+        shell: bash
+        run: |
+          set -euo pipefail
+          header="Source/SAC/SACCloudField.h"
+          source="Source/SAC/SACCloudField.cpp"
+          for layer in Near Mid Far; do
+            grep -Fq "${layer}CloudInstances" "$header" || {
+              echo "::error::Cloud field is missing the ${layer} instance layer"
+              exit 1
+            }
+            grep -Fq "${layer}CloudMesh" "$header" || {
+              echo "::error::Cloud field is missing the ${layer} mesh assignment"
+              exit 1
+            }
+          done
+          grep -Fq "FRandomStream Random(LayerSeed)" "$source"
+          grep -Fq "InstanceComponent->AddInstance" "$source"
+          grep -Fq "SetCollisionEnabled(ECollisionEnabled::NoCollision)" "$source"
+          echo "Three deterministic, non-colliding cloud instance layers are present."
