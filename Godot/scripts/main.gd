@@ -11,6 +11,7 @@ func _ready() -> void:
     _build_ocean()
     _build_clouds()
     _build_player()
+    _build_mobile_controls()
     _build_lighting()
 
 func _process(delta: float) -> void:
@@ -28,8 +29,9 @@ func _make_ripple(screen_uv: Vector2) -> void:
     if not player or not water_material:
         return
     var camera := player.get_node("Camera3D") as Camera3D
-    var origin := camera.project_ray_origin(screen_uv * Vector2(get_viewport().size))
-    var direction := camera.project_ray_normal(screen_uv * Vector2(get_viewport().size))
+    var pixel := screen_uv * Vector2(get_viewport().size)
+    var origin := camera.project_ray_origin(pixel)
+    var direction := camera.project_ray_normal(pixel)
     if absf(direction.y) < 0.0001:
         return
     var distance := -origin.y / direction.y
@@ -76,9 +78,19 @@ func _build_ocean() -> void:
     water_material = ShaderMaterial.new()
     water_material.shader = WATER_SHADER
     ocean.material_override = water_material
-    # PlaneMesh is already horizontal in Godot (local XZ plane).
     ocean.position.y = 0.0
     add_child(ocean)
+
+    # Invisible water-level collision keeps the explorer above the ocean.
+    var water_floor := StaticBody3D.new()
+    water_floor.name = "WaterLevelCollision"
+    var floor_shape := CollisionShape3D.new()
+    var floor_box := BoxShape3D.new()
+    floor_box.size = Vector3(4000.0, 1.0, 4000.0)
+    floor_shape.shape = floor_box
+    floor_shape.position.y = -0.5
+    water_floor.add_child(floor_shape)
+    add_child(water_floor)
 
 func _build_clouds() -> void:
     var cloud_material := StandardMaterial3D.new()
@@ -135,6 +147,41 @@ func _build_player() -> void:
     player.position = Vector3(0.0, 1.0, -8.0)
     add_child(player)
     player.set_script(load("res://scripts/player.gd"))
+
+func _build_mobile_controls() -> void:
+    var layer := CanvasLayer.new()
+    layer.name = "MobileControls"
+    add_child(layer)
+    var root := Control.new()
+    root.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+    root.mouse_filter = Control.MOUSE_FILTER_PASS
+    layer.add_child(root)
+
+    var directions := [
+        {"label": "▲", "direction": Vector2(0, -1), "position": Vector2(112, 500)},
+        {"label": "▼", "direction": Vector2(0, 1), "position": Vector2(112, 624)},
+        {"label": "◀", "direction": Vector2(-1, 0), "position": Vector2(48, 562)},
+        {"label": "▶", "direction": Vector2(1, 0), "position": Vector2(176, 562)}
+    ]
+    for item in directions:
+        var button := Button.new()
+        button.text = item.label
+        button.position = item.position
+        button.size = Vector2(58, 58)
+        button.focus_mode = Control.FOCUS_NONE
+        button.add_theme_font_size_override("font_size", 26)
+        button.modulate = Color(1.0, 1.0, 1.0, 0.78)
+        var direction: Vector2 = item.direction
+        button.button_down.connect(func(): player.set_touch_direction(direction, true))
+        button.button_up.connect(func(): player.set_touch_direction(direction, false))
+        root.add_child(button)
+
+    var hint := Label.new()
+    hint.text = "DRAG RIGHT SIDE TO LOOK"
+    hint.position = Vector2(900, 660)
+    hint.add_theme_font_size_override("font_size", 16)
+    hint.modulate = Color(1.0, 1.0, 1.0, 0.65)
+    root.add_child(hint)
 
 func _notification(what: int) -> void:
     if what == NOTIFICATION_WM_CLOSE_REQUEST:
