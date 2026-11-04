@@ -5,6 +5,10 @@ This workflow uses Blender in background mode on a GitHub-hosted Ubuntu runner. 
 ## Output
 - `SAC_Environment_Preview.png`: rendered environment study.
 - `SAC_Environment_Study.blend`: editable Blender scene.
+- `SAC_Cloud_Field.glb`: consolidated cloud-field mesh for UE5 import.
+- `SAC_Ocean_Surface.glb`: ocean surface geometry for UE5 import.
+
+The workflow checks that both GLB exports and the rendered PNG exist and are non-empty before uploading the artifact. The exports are geometry handoff assets; Unreal materials, collision, water interaction, and final scene assembly still need to be implemented in UE5.
 
 ## Visual target
 The study follows the supplied reference: deep sapphire reflective ocean, bright high sun offset to the right, broad cloud banks near the horizon, smaller higher cloud clusters, and a low camera with a large foreground reflection area.
