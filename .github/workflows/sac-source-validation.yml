@@ -81,12 +81,6 @@ jobs:
           done
           echo "All four ripple event slots are present."
 
-      - name: Confirm this is source validation, not an Unreal build
-        shell: bash
-        run: |
-          echo "Source and contract checks passed."
-          echo "This runner does not contain Unreal Engine; it does not compile SAC or package an APK."
-
       - name: Check layered cloud field source contract
         shell: bash
         run: |
@@ -107,3 +101,9 @@ jobs:
           grep -Fq "InstanceComponent->AddInstance" "$source"
           grep -Fq "SetCollisionEnabled(ECollisionEnabled::NoCollision)" "$source"
           echo "Three deterministic, non-colliding cloud instance layers are present."
+
+      - name: Confirm this is source validation, not an Unreal build
+        shell: bash
+        run: |
+          echo "Source and contract checks passed."
+          echo "This runner does not contain Unreal Engine; it does not compile SAC or package an APK."
