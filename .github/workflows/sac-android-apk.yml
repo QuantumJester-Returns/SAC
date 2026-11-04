@@ -83,6 +83,17 @@ jobs:
           test -x "$ANDROID_HOME/platform-tools/adb"
           test -x "$ANDROID_HOME/build-tools/34.0.0/apksigner"
 
+      - name: Download free CC0 3D assets
+        run: |
+          set -euo pipefail
+          mkdir -p Godot/assets/characters Godot/assets/clouds Godot/assets/sky
+          curl -fL --retry 3 -o Godot/assets/characters/KnightCaptain.glb https://gobkit.com/freebies/human003/KnightCaptain.glb
+          curl -fL --retry 3 -o Godot/assets/clouds/Cloud001.glb https://gobkit.com/freebies/environment/Cloud001.glb
+          curl -fL --retry 3 -o Godot/assets/clouds/Cloud002.glb https://gobkit.com/freebies/environment/Cloud002.glb
+          curl -fL --retry 3 -o Godot/assets/clouds/Cloud003.glb https://gobkit.com/freebies/environment/Cloud003.glb
+          curl -fL --retry 3 -o Godot/assets/sky/kloppenheim_05_puresky_2k.jpg https://dl.polyhaven.org/file/ph-assets/HDRIs/ldr/2k/kloppenheim_05_puresky_2k.jpg
+          file Godot/assets/characters/KnightCaptain.glb Godot/assets/clouds/*.glb Godot/assets/sky/*.jpg
+
       - name: Import project and export Android APK
         run: |
           set -euo pipefail
