@@ -59,7 +59,7 @@ jobs:
       - name: Export landscape Android APK
         run: |
           mkdir -p SAC-Godot/build
-          godot --headless --path SAC-Godot --export-debug "Android" SAC-Godot/build/SeaAmongTheClouds.apk
+          godot --headless --path SAC-Godot --export-debug "Android" build/SeaAmongTheClouds.apk
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
