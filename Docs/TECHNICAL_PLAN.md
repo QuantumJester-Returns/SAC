@@ -39,7 +39,7 @@ A previously considered HDR file was named rustig_koppie_puresky_4k.exr. Verify 
 ### Clouds
 Use layered cloud forms with clear near, middle, and far depth. Choose a rendering approach that meets the visual target while remaining viable on Android hardware.
 
-## Android build and update strategy
+## Cloud layout foundation\n\n`ASACCloudField` provides deterministic near, mid, and far instance layers with independently configurable meshes, counts, extents, heights, and a reproducible random seed. It is a static-mesh composition tool; volumetric cloud rendering and mobile profiling remain later tasks. See `Docs/CLOUD_FIELD_ACTOR.md`.\n\n## Android build and update strategy
 
 - Keep application ID com.quantumjester.sac unchanged after first release.
 - Package ARM64 APKs for milestone testing.
