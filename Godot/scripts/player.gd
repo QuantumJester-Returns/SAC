@@ -1,10 +1,11 @@
 extends CharacterBody3D
 
-@export var move_speed := 7.0
+@export var move_speed := 5.5
 @export var gravity := 18.0
 
 var touch_input := Vector2.ZERO
-var camera_pitch := deg_to_rad(-18.0)
+var camera_pitch := deg_to_rad(-17.0)
+var look_touch_index := -1
 
 func set_touch_direction(direction: Vector2, pressed: bool) -> void:
     if pressed:
@@ -20,23 +21,32 @@ func _physics_process(delta: float) -> void:
     input_vector.y += float(Input.is_key_pressed(KEY_S) or Input.is_key_pressed(KEY_DOWN)) - float(Input.is_key_pressed(KEY_W) or Input.is_key_pressed(KEY_UP))
     if input_vector.length() > 1.0:
         input_vector = input_vector.normalized()
-    var direction := Vector3(input_vector.x, 0.0, input_vector.y)
-    velocity.x = direction.x * move_speed
-    velocity.z = direction.z * move_speed
+    var local_direction := Vector3(input_vector.x, 0.0, input_vector.y)
+    var world_direction := global_transform.basis * local_direction
+    world_direction.y = 0.0
+    world_direction = world_direction.normalized()
+    velocity.x = world_direction.x * move_speed
+    velocity.z = world_direction.z * move_speed
     if not is_on_floor():
         velocity.y -= gravity * delta
     else:
         velocity.y = 0.0
     move_and_slide()
 
-func _unhandled_input(event: InputEvent) -> void:
-    if event is InputEventScreenDrag and event.position.x > get_viewport().size.x * 0.42:
-        rotate_y(-event.relative.x * 0.003)
-        camera_pitch = clampf(camera_pitch - event.relative.y * 0.003, deg_to_rad(-65.0), deg_to_rad(20.0))
-        var camera := get_node("Camera3D") as Camera3D
-        camera.rotation.x = camera_pitch
+func _input(event: InputEvent) -> void:
+    var screen_width := get_viewport().get_visible_rect().size.x
+    if event is InputEventScreenTouch:
+        if event.pressed and event.position.x > screen_width * 0.42:
+            look_touch_index = event.index
+        elif not event.pressed and event.index == look_touch_index:
+            look_touch_index = -1
+    elif event is InputEventScreenDrag and event.index == look_touch_index:
+        _apply_look(event.relative)
     elif event is InputEventMouseMotion and Input.is_mouse_button_pressed(MOUSE_BUTTON_RIGHT):
-        rotate_y(-event.relative.x * 0.003)
-        camera_pitch = clampf(camera_pitch - event.relative.y * 0.003, deg_to_rad(-65.0), deg_to_rad(20.0))
-        var camera := get_node("Camera3D") as Camera3D
-        camera.rotation.x = camera_pitch
+        _apply_look(event.relative)
+
+func _apply_look(relative: Vector2) -> void:
+    rotate_y(-relative.x * 0.004)
+    camera_pitch = clampf(camera_pitch - relative.y * 0.003, deg_to_rad(-60.0), deg_to_rad(25.0))
+    var camera := get_node("Camera3D") as Camera3D
+    camera.rotation.x = camera_pitch
