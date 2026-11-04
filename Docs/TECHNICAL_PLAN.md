@@ -1,75 +1,73 @@
-# SAC — Initial Technical Plan
+# SAC — Technical Plan
 
-## 1. Engine and project structure
+## Platform and project
 
-Unreal Engine 5 is the intended primary engine. Confirm and record the exact engine release before generating engine-version-specific project files or plugins.
+- Engine: Unreal Engine 5.
+- First hands-on target: native Android (ARM64).
+- Main implementation: C++ gameplay foundation plus Unreal-native maps, materials, and assets.
+- Repository: GitHub, with large binary assets tracked using Git LFS where appropriate.
 
-Use a clear separation between:
-- **Environment:** water, sky, clouds, atmosphere, lighting.
-- **Arena:** map composition, scale references, traversal space.
-- **Player test layer:** a minimal pawn and camera for exploration.
-- **Validation:** repeatable screenshots, performance observations, and setup documentation.
+The exact Unreal Engine release must be selected before the first local compile and Android package. The Android SDK, NDK, and Java toolchain must match that engine release.
 
-## 2. Rendering approach
+## First milestone: the arena
+
+Build the environment before adding unrelated game systems:
+1. Establish a minimal playable character and camera.
+2. Create a large-scale arena map.
+3. Establish the sky, atmospheric lighting, and sun direction.
+4. Build the sea surface, restrained waves, and convincing reflections.
+5. Add cloud layers at and below sea altitude.
+6. Tune horizon, scale, colour, and visual depth.
+7. Profile performance on the target Android device.
+
+## Rendering approach
 
 ### Water
-Start with an Unreal material and a deliberately restrained surface response. Evaluate:
-- Reflection quality and stability.
-- Roughness and specular response under the chosen lighting.
-- Large-scale colour variation and subtle normal movement.
-- Cost of reflection features at the intended camera distances.
+Develop an Unreal material and geometry approach that supports:
+- Deep-blue appearance with natural lighting variation.
+- Restrained, low-amplitude surface movement.
+- Stable reflections of sky and clouds.
+- Mobile-appropriate shader complexity.
 
-Do not lock a roughness value from an early visual reference without checking it under the actual lighting and rendering configuration.
+An earlier roughness value around 0.025 was only a visual reference, not a locked physical parameter. Validate the final response under the selected rendering pipeline and lighting.
 
 ### Sky and atmosphere
-Evaluate Unreal Sky Atmosphere and the engine's supported sky/lighting components first. A separately sourced HDR environment may be useful for reference or a controlled lighting experiment, but it should not be added blindly as a competing sky system.
+Evaluate Unreal Sky Atmosphere and supported sky/lighting components as the primary system. Avoid adding a separate HDR sky that conflicts with the engine atmosphere.
 
-A previously considered source file was named `rustig_koppie_puresky_4k.exr`. Its availability, provenance, licence, and compatibility must be verified before use.
+A previously considered HDR file was named rustig_koppie_puresky_4k.exr. Verify its provenance, licence, and suitability before including it.
 
 ### Clouds
-Prototype cloud placement and depth independently from the water. Choose the least complex approach that meets the visual target, then test how it behaves with the selected lighting and camera distances.
+Use layered cloud forms with clear near, middle, and far depth. Choose a rendering approach that meets the visual target while remaining viable on Android hardware.
 
-## 3. Asset and licence policy
+## Android build and update strategy
 
-For every external asset, record:
-- Asset name and source URL.
-- Creator or publisher.
-- Licence and attribution requirements.
-- Local project path.
-- Any modifications made.
+- Keep application ID com.quantumjester.sac unchanged after first release.
+- Package ARM64 APKs for milestone testing.
+- Increase Android version code for every distributed update.
+- Sign every update with the same protected release keystore.
+- Never commit keystore files or passwords.
+- Back up the keystore securely before distributing the first signed APK.
 
-Do not commit assets whose licence or redistribution terms are unclear. Large binary assets should use Git LFS when appropriate.
+See ANDROID_RELEASE_PLAN.md for the release workflow and security rules.
 
-## 4. Source control
+## Asset and licence policy
 
-- Keep the Unreal project and documentation in Git.
-- Use Git LFS for large binary formats when needed.
-- Keep generated build products and local editor state out of version control.
+For every external asset, record its source, creator, licence, attribution requirements, local path, and modifications. Do not commit assets with unclear redistribution rights.
+
+## Source control
+
+- Keep source, configuration, and documentation in Git.
+- Use Git LFS for large binary assets when appropriate.
+- Exclude generated build products and local signing material.
 - Make focused commits with descriptive messages.
-- Keep the default branch buildable and documented.
 
-## 5. Development sequence
+## Validation
 
-1. Confirm the Unreal Engine version and create/open the project.
-2. Establish a minimal arena map and player test pawn.
-3. Build the sky and atmospheric lighting baseline.
-4. Add the sea material and validate reflections.
-5. Add cloud layers and tune their relationship to the horizon and sea.
-6. Establish scale references and a repeatable camera test route.
-7. Profile the scene and document known limitations.
-8. Review the acceptance criteria in the Milestone 1 specification.
-
-## 6. Validation
-
-For each major visual change, capture the same set of views:
-- Wide horizon view.
+For each major environment change, compare repeatable views:
+- Wide horizon.
 - Low camera angle near the water.
 - View toward the sun.
 - View away from the sun.
 - View showing cloud depth and vertical placement.
 
-Record engine version, rendering settings, hardware, and any known limitations alongside performance measurements.
-
-## 7. Decision log
-
-Record confirmed decisions here as the project develops. Keep proposed approaches clearly distinguished from implemented and tested ones.
+A milestone APK is only considered ready after a real package build and installation test on the phone.
