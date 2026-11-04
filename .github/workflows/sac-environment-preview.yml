@@ -1,0 +1,38 @@
+name: SAC Environment Preview
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'Tools/blender/**'
+      - '.github/workflows/sac-environment-preview.yml'
+permissions:
+  contents: read
+jobs:
+  blender-render:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Blender
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y blender
+          blender --version
+      - name: Generate and render SAC environment
+        run: |
+          mkdir -p output
+          SAC_OUTPUT="$PWD/output/SAC_Environment_Preview.png" SAC_BLEND="$PWD/output/SAC_Environment_Study.blend" blender -b -t 2 --python Tools/blender/generate_sac_environment.py
+      - name: Check Unreal Engine availability
+        shell: bash
+        run: |
+          if command -v UnrealEditor >/dev/null 2>&1 || command -v UnrealEditor-Cmd >/dev/null 2>&1; then
+            echo "Unreal Engine executable detected."
+          else
+            echo "::notice::This GitHub-hosted runner does not have Unreal Engine installed. Blender preview is real; this job does not claim to compile or render the UE5 project."
+          fi
+      - uses: actions/upload-artifact@v4
+        with:
+          name: SAC-Environment-Preview
+          path: output/
+          if-no-files-found: error
+          retention-days: 14
