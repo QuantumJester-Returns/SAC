@@ -81,24 +81,11 @@ jobs:
           test -x "$ANDROID_HOME/platform-tools/adb"
           test -x "$ANDROID_HOME/build-tools/34.0.0/apksigner"
 
-      - name: Download free CC0 3D character and sky assets
+      - name: Download free CC0 3D character
         run: |
           set -euo pipefail
-          mkdir -p Godot/assets/characters Godot/assets/sky
+          mkdir -p Godot/assets/characters
           curl -fL --retry 3 -o Godot/assets/characters/KnightCaptain.glb https://gobkit.com/freebies/human003/KnightCaptain.glb
-          # Resolve the official Poly Haven download URL from its asset API.
-          python3 - <<'PY'
-          import json, urllib.request
-          api = "https://api.polyhaven.com/files/kloppenheim_05"
-          request = urllib.request.Request(api, headers={"User-Agent": "SAC-Android-Builder/1.0"})
-          with urllib.request.urlopen(request, timeout=30) as response:
-              files = json.load(response)
-          url = files["hdri"]["2k"]["hdr"]["url"]
-          print("Resolved Poly Haven HDRI:", url)
-          download = urllib.request.Request(url, headers={"User-Agent": "SAC-Android-Builder/1.0"})
-          with urllib.request.urlopen(download, timeout=120) as response, open("Godot/assets/sky/kloppenheim_05_puresky_2k.hdr", "wb") as output:
-              output.write(response.read())
-          PY
           python3 - <<'PY'
           import pathlib, struct
           path = pathlib.Path("Godot/assets/characters/KnightCaptain.glb")
@@ -106,10 +93,6 @@ jobs:
           if len(data) < 20 or data[:4] != b"glTF" or struct.unpack("<I", data[4:8])[0] != 2:
               raise SystemExit(f"Invalid GLB download: {path}")
           print(f"Validated {path}: {len(data):,} bytes")
-          sky = pathlib.Path("Godot/assets/sky/kloppenheim_05_puresky_2k.hdr")
-          if not sky.is_file() or sky.stat().st_size < 100_000:
-              raise SystemExit("Poly Haven HDRI download is missing or unexpectedly small")
-          print(f"Validated {sky}: {sky.stat().st_size:,} bytes")
           PY
 
       - name: Import project and export Android APK
