@@ -4,6 +4,7 @@
 #include "GameFramework/Actor.h"
 #include "SACCloudField.generated.h"
 
+class USceneComponent;
 class UInstancedStaticMeshComponent;
 class UStaticMesh;
 
