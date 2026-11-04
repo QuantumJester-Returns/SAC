@@ -76,7 +76,6 @@ void ASACCloudField::RebuildCloudLayer(
     }
 }
 
-#if WITH_EDITOR
 void ASACCloudField::OnConstruction(const FTransform& Transform)
 {
     Super::OnConstruction(Transform);
@@ -93,4 +92,3 @@ void ASACCloudField::OnConstruction(const FTransform& Transform)
         FarCloudInstances, FarCloudMesh, FarCloudCount,
         FarFieldExtent, FarBaseHeight, RandomSeed + 211);
 }
-#endif
