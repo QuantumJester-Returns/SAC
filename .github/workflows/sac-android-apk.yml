@@ -81,18 +81,15 @@ jobs:
           test -x "$ANDROID_HOME/platform-tools/adb"
           test -x "$ANDROID_HOME/build-tools/34.0.0/apksigner"
 
-      - name: Download free CC0 3D assets
+      - name: Download free CC0 3D character and sky assets
         run: |
           set -euo pipefail
-          mkdir -p Godot/assets/characters Godot/assets/clouds Godot/assets/sky
+          mkdir -p Godot/assets/characters Godot/assets/sky
           curl -fL --retry 3 -o Godot/assets/characters/KnightCaptain.glb https://gobkit.com/freebies/human003/KnightCaptain.glb
-          curl -fL --retry 3 -o Godot/assets/clouds/Cloud001.glb https://gobkit.com/freebies/environment/Cloud001.glb
-          curl -fL --retry 3 -o Godot/assets/clouds/Cloud002.glb https://gobkit.com/freebies/environment/Cloud002.glb
-          curl -fL --retry 3 -o Godot/assets/clouds/Cloud003.glb https://gobkit.com/freebies/environment/Cloud003.glb
           # Resolve the official Poly Haven download URL from its asset API.
           python3 - <<'PY'
           import json, urllib.request
-          api = "https://api.polyhaven.com/files/kloppenheim_05_puresky"
+          api = "https://api.polyhaven.com/files/kloppenheim_05"
           request = urllib.request.Request(api, headers={"User-Agent": "SAC-Android-Builder/1.0"})
           with urllib.request.urlopen(request, timeout=30) as response:
               files = json.load(response)
@@ -104,19 +101,16 @@ jobs:
           PY
           python3 - <<'PY'
           import pathlib, struct
-          paths = [
-              pathlib.Path("Godot/assets/characters/KnightCaptain.glb"),
-              *pathlib.Path("Godot/assets/clouds").glob("*.glb")
-          ]
-          for path in paths:
-              data = path.read_bytes()
-              if len(data) < 20 or data[:4] != b"glTF" or struct.unpack("<I", data[4:8])[0] != 2:
-                  raise SystemExit(f"Invalid GLB download: {path}")
-              print(f"Validated {path}: {len(data):,} bytes")
+          path = pathlib.Path("Godot/assets/characters/KnightCaptain.glb")
+          data = path.read_bytes()
+          if len(data) < 20 or data[:4] != b"glTF" or struct.unpack("<I", data[4:8])[0] != 2:
+              raise SystemExit(f"Invalid GLB download: {path}")
+          print(f"Validated {path}: {len(data):,} bytes")
           sky = pathlib.Path("Godot/assets/sky/kloppenheim_05_puresky_2k.hdr")
           if not sky.is_file() or sky.stat().st_size < 100_000:
               raise SystemExit("Poly Haven HDRI download is missing or unexpectedly small")
           print(f"Validated {sky}: {sky.stat().st_size:,} bytes")
+          PY
 
       - name: Import project and export Android APK
         run: |
