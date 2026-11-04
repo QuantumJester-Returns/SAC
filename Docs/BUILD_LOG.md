@@ -51,3 +51,10 @@
 - Unreal C++ compile: not yet run; no Unreal Editor/build environment is available in the phone-only workflow.
 - Unreal asset import and level assembly: pending editor access.
 - Android APK: no new Unreal package has been built.
+
+## 2026-11-04 — Ocean surface actor foundation
+
+- Added `ASACOceanSurface`, a reusable Unreal actor that joins an imported static mesh, assigned water material, and the existing ripple event component.
+- Added an editor-facing setup guide for importing the ocean OBJ and assigning the future water master material.
+- Kept collision disabled by default so the ocean does not unexpectedly block the player before the water interaction design is settled.
+- This remains uncompiled C++ source; the Unreal material graph and imported `.uasset` files are still pending editor access.
