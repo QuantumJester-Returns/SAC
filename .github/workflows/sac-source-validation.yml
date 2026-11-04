@@ -47,15 +47,24 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          for slot in 0 1 2 3; do
-            for parameter in Origin Age Strength Speed Width; do
-              grep -Fq "SAC_Ripple${slot}_${parameter}" Source/SAC/SACWaterRippleComponent.cpp || {
-                echo "::error::Missing C++ material parameter SAC_Ripple${slot}_${parameter}"
-                exit 1
-              }
-            done
+          header="Source/SAC/SACWaterRippleComponent.h"
+          source="Source/SAC/SACWaterRippleComponent.cpp"
+
+          grep -Eq 'RippleSlotCount[[:space:]]*=[[:space:]]*4' "$header" || {
+            echo "::error::C++ ripple component must define exactly four event slots"
+            exit 1
+          }
+          grep -Fq 'FString::Printf(TEXT("SAC_Ripple%d_"), Index)' "$source" || {
+            echo "::error::C++ ripple component is missing its indexed material-parameter prefix"
+            exit 1
+          }
+          for parameter in Origin Age Strength Speed Width; do
+            grep -Fq "TEXT("$parameter")" "$source" || {
+              echo "::error::C++ ripple component is missing parameter suffix $parameter"
+              exit 1
+            }
           done
-          echo "All four ripple slots expose the expected parameter contract."
+          echo "C++ exposes five material parameters across four indexed ripple slots."
 
       - name: Check water shader has four event inputs
         shell: bash
