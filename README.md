@@ -2,51 +2,43 @@
 
 **Build the world first, then build the game that belongs in it.**
 
-Sea Among The Clouds is a 3D game project whose first milestone is to establish a striking, explorable arena: a vast reflective sea beneath an immense sky, with clouds drifting below and around sea level.
+Sea Among The Clouds is a native 3D game project. The primary engine is Unreal Engine 5, and Android is the first hands-on test platform. Development focuses on a real-time playable world, not a browser game.
 
-## Project direction
+## First milestone — The arena
 
-The first milestone is a convincing world foundation, not a complete game.
+Create a convincing, explorable environment built around:
+- A vast, deep-blue reflective sea with restrained surface motion.
+- An enormous sky with atmospheric depth and natural sunlight.
+- Clouds floating beneath and around sea altitude.
+- Coherent lighting and reflections across the environment.
+- A playable space for later movement and combat tests.
 
-### Milestone 1 — The arena
+## Development order
 
-- Vast, deep-blue sea with subtle surface motion and convincing reflections.
-- An enormous sky with atmospheric depth and a strong sense of scale.
-- Clouds positioned beneath and around the sea's altitude.
-- Natural sunlight and coherent lighting between sky, clouds, and water.
-- A playable space suitable for later movement and combat tests.
+1. Establish the native Unreal project and a minimal playable character.
+2. Build the sea, sky, clouds, and lighting.
+3. Refine scale, atmosphere, and performance.
+4. Add mobile touch controls and device-specific optimization.
+5. Package a signed Android APK at major milestones for real-device testing.
 
-### Out of scope for this milestone
+## Android update continuity
 
-Do not divert effort into lobbies, dungeons, multiplayer, progression, crafting, inventory, rankings, or finished combat systems. Those depend on the world foundation and should come later.
+The Android application ID is initially com.quantumjester.sac. A persistent private signing keystore will be created and securely backed up before the first distributed APK. The keystore and passwords must never be committed to this repository. Future APKs must retain the same application ID and signing identity, and their version codes must increase.
 
-## Intended technology
+See Docs/ANDROID_RELEASE_PLAN.md for the signing and packaging policy.
 
-- **Unreal Engine 5** — primary game engine.
-- **Blender** — modelling and asset preparation.
-- **GitHub** — source control and project documentation.
-- **GitHub Actions** — lightweight automated repository checks.
+## Repository structure
 
-The exact engine version, rendering settings, asset licences, and implementation choices should be recorded as they are verified.
+- Config/ — Unreal project and input configuration.
+- Content/ — maps, materials, meshes, blueprints, and other game assets.
+- Docs/ — milestone specifications, technical decisions, and build records.
+- Source/ — C++ game code.
+- SAC.uproject — Unreal project descriptor.
 
-## Development principles
+## Scope discipline
 
-1. Build the environment before adding unrelated game systems.
-2. Prefer a small number of coherent, high-quality systems over disconnected placeholders.
-3. Keep the project reproducible and document setup steps.
-4. Verify third-party asset licences before including assets.
-5. Make visual and technical decisions through playable prototypes.
-
-## Repository layout
-
-- `Config/` — Unreal project configuration.
-- `Content/` — game assets, maps, materials, meshes, and blueprints.
-- `Docs/` — milestone specifications and technical decisions.
-- `Source/` — C++ game source.
-- `Prototype/` — standalone experiments used to validate environment ideas.
+The first milestone is the world foundation. Do not divert effort into lobbies, dungeons, multiplayer, progression, crafting, inventory, rankings, or finished combat before the arena is stable and explorable.
 
 ## Status
 
-**Current focus:** establish the Milestone 1 arena foundation and validate the visual direction.
-
-This repository is the project home. Update this README as implementation decisions are confirmed; do not present planned features as completed work.
+In progress: native Unreal project foundation and first arena implementation.
