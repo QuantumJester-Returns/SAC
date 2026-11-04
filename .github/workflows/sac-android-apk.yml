@@ -36,11 +36,11 @@ jobs:
 
       - name: Install Godot 4.4.1 and Android export templates
         run: |
-          curl -L --retry 3 -o godot.zip https://github.com/godotengine/godot/releases/download/4.4.1-stable/Godot_v4.4.1-stable_linux.x86_64.zip
+          curl -fL --retry 3 -o godot.zip https://github.com/godotengine/godot/releases/download/4.4.1-stable/Godot_v4.4.1-stable_linux.x86_64.zip
           unzip -q godot.zip -d godot-bin
           chmod +x godot-bin/Godot_v4.4.1-stable_linux.x86_64
           mkdir -p "$HOME/.local/share/godot/export_templates/4.4.1.stable"
-          curl -L --retry 3 -o templates.tpz https://github.com/godotengine/godot/releases/download/4.4.1-stable/Godot_v4.4.1-stable_export_templates.tpz
+          curl -fL --retry 3 -o templates.tpz https://github.com/godotengine/godot/releases/download/4.4.1-stable/Godot_v4.4.1-stable_export_templates.tpz
           unzip -q templates.tpz -d template-unpack
           cp -a template-unpack/templates/. "$HOME/.local/share/godot/export_templates/4.4.1.stable/"
 
@@ -60,8 +60,6 @@ jobs:
           KEYSTORE="$RUNNER_TEMP/sac-signing/SAC-Android-Signing-Key.jks"
           printf '%s' "$SAC_ANDROID_KEYSTORE_BASE64" | base64 --decode > "$KEYSTORE"
           keytool -list -keystore "$KEYSTORE" -storepass "$SAC_ANDROID_KEYSTORE_PASSWORD" -alias "$SAC_ANDROID_KEY_ALIAS" >/dev/null
-          # Godot's Android exporter exposes one password field. Align the private-key
-          # password with the keystore password on this ephemeral runner copy.
           keytool -keypasswd -keystore "$KEYSTORE" -storepass "$SAC_ANDROID_KEYSTORE_PASSWORD" -alias "$SAC_ANDROID_KEY_ALIAS" -keypass "$SAC_ANDROID_KEY_PASSWORD" -new "$SAC_ANDROID_KEYSTORE_PASSWORD"
           {
             echo "GODOT_ANDROID_KEYSTORE_DEBUG_PATH=$KEYSTORE"
@@ -91,8 +89,31 @@ jobs:
           curl -fL --retry 3 -o Godot/assets/clouds/Cloud001.glb https://gobkit.com/freebies/environment/Cloud001.glb
           curl -fL --retry 3 -o Godot/assets/clouds/Cloud002.glb https://gobkit.com/freebies/environment/Cloud002.glb
           curl -fL --retry 3 -o Godot/assets/clouds/Cloud003.glb https://gobkit.com/freebies/environment/Cloud003.glb
-          curl -fL --retry 3 -o Godot/assets/sky/kloppenheim_05_puresky_2k.jpg https://dl.polyhaven.org/file/ph-assets/HDRIs/ldr/2k/kloppenheim_05_puresky_2k.jpg
-          file Godot/assets/characters/KnightCaptain.glb Godot/assets/clouds/*.glb Godot/assets/sky/*.jpg
+          # Resolve the official Poly Haven download URL from its asset API.
+          python3 - <<'PY'
+          import json, urllib.request
+          api = "https://api.polyhaven.com/files/kloppenheim_05_puresky"
+          with urllib.request.urlopen(api, timeout=30) as response:
+              files = json.load(response)
+          url = files["hdri"]["2k"]["hdr"]["url"]
+          print("Resolved Poly Haven HDRI:", url)
+          urllib.request.urlretrieve(url, "Godot/assets/sky/kloppenheim_05_puresky_2k.hdr")
+          PY
+          python3 - <<'PY'
+          import pathlib, struct
+          paths = [
+              pathlib.Path("Godot/assets/characters/KnightCaptain.glb"),
+              *pathlib.Path("Godot/assets/clouds").glob("*.glb")
+          ]
+          for path in paths:
+              data = path.read_bytes()
+              if len(data) < 20 or data[:4] != b"glTF" or struct.unpack("<I", data[4:8])[0] != 2:
+                  raise SystemExit(f"Invalid GLB download: {path}")
+              print(f"Validated {path}: {len(data):,} bytes")
+          sky = pathlib.Path("Godot/assets/sky/kloppenheim_05_puresky_2k.hdr")
+          if not sky.is_file() or sky.stat().st_size < 100_000:
+              raise SystemExit("Poly Haven HDRI download is missing or unexpectedly small")
+          print(f"Validated {sky}: {sky.stat().st_size:,} bytes")
 
       - name: Import project and export Android APK
         run: |
