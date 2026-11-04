@@ -22,6 +22,18 @@ jobs:
         run: |
           mkdir -p output
           SAC_RENDER_ENGINE=CYCLES SAC_OUTPUT="$PWD/output/SAC_Environment_Preview.png" SAC_BLEND="$PWD/output/SAC_Environment_Study.blend" blender -b -t 2 --python Tools/blender/generate_sac_environment.py
+      - name: Publish generated source assets to repository
+        run: |
+          mkdir -p Content/SourceAssets/Generated
+          cp output/SAC_Cloud_Field.obj output/SAC_Cloud_Field.mtl Content/SourceAssets/Generated/
+          cp output/SAC_Ocean_Surface.obj output/SAC_Ocean_Surface.mtl Content/SourceAssets/Generated/
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add Content/SourceAssets/Generated/
+          if ! git diff --cached --quiet; then
+            git commit -m "Add generated SAC environment source assets"
+            git push
+          fi
       - name: Check Unreal Engine availability
         shell: bash
         run: |
