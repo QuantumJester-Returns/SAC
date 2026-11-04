@@ -10,7 +10,7 @@ The PC visual target remains the quality ceiling. Android testing will be profil
 
 - ASACEnvironmentController: C++ actor that creates and configures a Sky Atmosphere, directional sun, movable Sky Light, and Exponential Height Fog.
 - USACWaterRippleComponent: gameplay-to-material bridge for force-driven ripple events.
-- Original cloud and ocean OBJ source meshes in Content/SourceAssets/.
+- Original cloud and ocean OBJ source meshes in Content/SourceAssets/.\n- `ASACCloudField`: deterministic near/mid/far instanced cloud layout actor, with per-layer mesh assignment and composition controls.
 
 These source classes and OBJ files are not Unreal-imported assets. They require an Unreal Editor project generation/import/compile pass before they can be considered working in-engine.
 
