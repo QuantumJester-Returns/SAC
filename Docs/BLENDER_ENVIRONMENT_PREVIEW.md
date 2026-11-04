@@ -8,7 +8,7 @@ This workflow uses Blender in background mode on a GitHub-hosted Ubuntu runner. 
 - `SAC_Cloud_Field.obj`: consolidated cloud-field mesh for UE5 import.
 - `SAC_Ocean_Surface.obj`: ocean surface geometry for UE5 import.
 
-The workflow checks that both OBJ exports and the rendered PNG exist and are non-empty before uploading the artifact. The exports are geometry handoff assets; Unreal materials, collision, water interaction, and final scene assembly still need to be implemented in UE5.
+The workflow checks that both OBJ exports and the rendered PNG exist and are non-empty before uploading the artifact. The workflow also commits the generated OBJ/MTL source files into `Content/SourceAssets/Generated/`, so the project keeps the assets rather than relying only on a temporary Actions artifact. `Content/Python/SAC_BuildEnvironment.py` is the Unreal Editor automation entry point: it imports the generated meshes, creates `SAC_Environment`, places the ocean/cloud meshes, adds a sun light, and saves the level. Run it from Unreal Editor with **Tools → Execute Python Script** when a licensed UE5 editor environment is available. This assembles a first-pass level; water interaction, touch controls, materials polish, and Android packaging remain later tasks.
 
 ## Visual target
 The study follows the supplied reference: deep sapphire reflective ocean, bright high sun offset to the right, broad cloud banks near the horizon, smaller higher cloud clusters, and a low camera with a large foreground reflection area.
