@@ -34,3 +34,20 @@
 2. Create the high-quality ocean material and reflection setup.
 3. Develop the cloud material and layered atmospheric composition.
 4. Establish the arena map, sun, and sky system.
+
+
+## 2026-11-04 — Unreal Engine 5 environment foundation
+
+- Confirmed Unreal Engine 5 as the final engine; the prior Godot APK is reference material only.
+- Added an Unreal C++ environment controller for Sky Atmosphere, sun lighting, skylight, and exponential height fog.
+- Added the Environment Milestone 01 setup and acceptance checklist.
+- Added the animation recovery plan: the old 42-clip report is useful evidence, but the editable retargeted GLB is not present as a source file in the APK.
+- Confirmed the previous Godot sea shader's core behaviour: calm baseline, event-triggered expanding ripple, force-scaled amplitude. Its material implementation will be recreated in Unreal.
+- Animation replacement will be sourced from free libraries only after checking exact licences; animation work does not block the environment milestone.
+
+### Current validation status
+
+- GitHub source commits: verified by fetching the newly committed files.
+- Unreal C++ compile: not yet run; no Unreal Editor/build environment is available in the phone-only workflow.
+- Unreal asset import and level assembly: pending editor access.
+- Android APK: no new Unreal package has been built.
