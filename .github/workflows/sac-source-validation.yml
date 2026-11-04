@@ -1,0 +1,76 @@
+name: SAC Source Validation
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate-source-foundation:
+    name: Validate SAC source foundation
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Verify required project files
+        shell: bash
+        run: |
+          set -euo pipefail
+          required_files=(
+            "SAC.uproject"
+            "Source/SAC/SAC.Build.cs"
+            "Source/SAC/SACEnvironmentController.h"
+            "Source/SAC/SACEnvironmentController.cpp"
+            "Source/SAC/SACWaterRippleComponent.h"
+            "Source/SAC/SACWaterRippleComponent.cpp"
+            "Source/SAC/SACOceanSurface.h"
+            "Source/SAC/SACOceanSurface.cpp"
+            "Content/SourceAssets/Water/SAC_WaterRippleNormal.hlsl"
+            "Docs/WATER_MATERIAL_IMPLEMENTATION.md"
+            "Docs/ENVIRONMENT_MILESTONE_01.md"
+          )
+          for file in "${required_files[@]}"; do
+            if [[ ! -s "$file" ]]; then
+              echo "::error file=$file::Required file is missing or empty"
+              exit 1
+            fi
+            echo "OK: $file"
+          done
+
+      - name: Check water ripple parameter contract
+        shell: bash
+        run: |
+          set -euo pipefail
+          for slot in 0 1 2 3; do
+            for parameter in Origin Age Strength Speed Width; do
+              grep -Fq "SAC_Ripple${slot}_${parameter}" Source/SAC/SACWaterRippleComponent.cpp || {
+                echo "::error::Missing C++ material parameter SAC_Ripple${slot}_${parameter}"
+                exit 1
+              }
+            done
+          done
+          echo "All four ripple slots expose the expected parameter contract."
+
+      - name: Check water shader has four event inputs
+        shell: bash
+        run: |
+          set -euo pipefail
+          for slot in 0 1 2 3; do
+            grep -Fq "SAC_ACCUMULATE_RIPPLE(Origin${slot}" Content/SourceAssets/Water/SAC_WaterRippleNormal.hlsl || {
+              echo "::error::Ripple shader is missing event slot ${slot}"
+              exit 1
+            }
+          done
+          echo "All four ripple event slots are present."
+
+      - name: Confirm this is source validation, not an Unreal build
+        shell: bash
+        run: |
+          echo "Source and contract checks passed."
+          echo "This runner does not contain Unreal Engine; it does not compile SAC or package an APK."
