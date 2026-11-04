@@ -1,10 +1,10 @@
 extends CharacterBody3D
 
-@export var move_speed := 5.5
+@export var move_speed := 9.5
 @export var gravity := 18.0
 
 var touch_input := Vector2.ZERO
-var camera_pitch := deg_to_rad(-17.0)
+var camera_pitch := deg_to_rad(-25.0)
 var look_touch_index := -1
 var character_animation: AnimationPlayer
 var active_animation := ""
