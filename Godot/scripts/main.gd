@@ -29,15 +29,15 @@ func _process(delta: float) -> void:
         var horizontal_speed := Vector2(player.velocity.x, player.velocity.z).length()
         if horizontal_speed > 0.7:
             step_clock += delta
-            if step_clock >= 0.42:
-                var strength := clampf(horizontal_speed / 5.5, 0.35, 1.25)
+            if step_clock >= 0.30:
+                var strength := clampf(horizontal_speed / 9.5, 0.35, 1.25)
                 register_water_impact(player.global_position, strength)
                 step_clock = 0.0
         else:
             step_clock = 0.0
 
 func register_water_impact(world_position: Vector3, strength: float = 1.0) -> void:
-    # Public impact entry point: any future character, prop, projectile or physics
+    # Public impact entry point: any character, prop, projectile or physics
     # object can call this. Eight independent events can coexist on the surface.
     if not water_material:
         return
@@ -55,24 +55,23 @@ func _on_water_body_entered(body: Node3D) -> void:
         register_water_impact(body.global_position, 1.4)
 
 func _build_sky() -> void:
+    # A clean procedural sky replaces the HDRI panorama, whose baked landscape
+    # was creating unwanted silhouettes and clutter along the sea horizon.
     var world := WorldEnvironment.new()
     var environment := Environment.new()
     environment.background_mode = Environment.BG_SKY
     var sky := Sky.new()
-    var panorama := PanoramaSkyMaterial.new()
-    var sky_texture := load("res://assets/sky/kloppenheim_05_puresky_2k.hdr") as Texture2D
-    if sky_texture:
-        panorama.panorama = sky_texture
-        sky.sky_material = panorama
-    else:
-        push_warning("SAC sky HDRI missing; using procedural blue-sky fallback")
-        var fallback := ProceduralSkyMaterial.new()
-        fallback.sky_top_color = Color(0.015, 0.12, 0.42)
-        fallback.sky_horizon_color = Color(0.22, 0.55, 0.88)
-        fallback.ground_bottom_color = Color(0.025, 0.08, 0.18)
-        fallback.ground_horizon_color = Color(0.20, 0.48, 0.72)
-        fallback.sun_angle_max = 12.0
-        sky.sky_material = fallback
+    var clear_sky := ProceduralSkyMaterial.new()
+    clear_sky.sky_top_color = Color(0.025, 0.20, 0.62)
+    clear_sky.sky_horizon_color = Color(0.30, 0.66, 0.96)
+    clear_sky.sky_curve = 0.18
+    clear_sky.sky_energy_multiplier = 1.0
+    clear_sky.ground_bottom_color = Color(0.006, 0.045, 0.14)
+    clear_sky.ground_horizon_color = Color(0.30, 0.66, 0.96)
+    clear_sky.ground_curve = 0.12
+    clear_sky.sun_angle_max = 3.0
+    clear_sky.sun_curve = 0.12
+    sky.sky_material = clear_sky
     environment.sky = sky
     environment.ambient_light_source = Environment.AMBIENT_SOURCE_SKY
     environment.tonemap_mode = Environment.TONE_MAPPER_FILMIC
@@ -112,7 +111,6 @@ func _build_ocean() -> void:
     water_floor.add_child(floor_shape)
     add_child(water_floor)
 
-    # Any physics body entering the water surface creates its own impact event.
     var interaction_area := Area3D.new()
     interaction_area.name = "WaterInteractionArea"
     interaction_area.collision_layer = 0
@@ -141,7 +139,7 @@ func _build_player() -> void:
     if character_scene:
         var character := character_scene.instantiate()
         character.name = "CharacterModel"
-        character.scale = Vector3.ONE * 2.0
+        character.scale = Vector3.ONE * 6.2
         player.add_child(character)
         var animation_player := _find_animation_player(character)
         if animation_player:
@@ -155,8 +153,8 @@ func _build_player() -> void:
 
     var camera := Camera3D.new()
     camera.name = "Camera3D"
-    camera.position = Vector3(0.0, 3.1, 5.2)
-    camera.rotation_degrees = Vector3(-22.0, 0.0, 0.0)
+    camera.position = Vector3(0.0, 7.0, 11.5)
+    camera.rotation_degrees = Vector3(-25.0, 0.0, 0.0)
     camera.current = true
     camera.fov = 65.0
     player.add_child(camera)
