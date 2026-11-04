@@ -54,12 +54,11 @@ jobs:
           if [ ! -f "$HOME/.android/sac-debug.keystore" ]; then
             keytool -genkeypair -v -keystore "$HOME/.android/sac-debug.keystore" -storepass android -alias sacdebug -keypass android -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=SAC Debug,O=QuantumJester,C=BD"
           fi
+          echo "GODOT_ANDROID_KEYSTORE_DEBUG_PATH=$HOME/.android/sac-debug.keystore" >> "$GITHUB_ENV"
+          echo "GODOT_ANDROID_KEYSTORE_DEBUG_USER=sacdebug" >> "$GITHUB_ENV"
+          echo "GODOT_ANDROID_KEYSTORE_DEBUG_PASSWORD=android" >> "$GITHUB_ENV"
 
       - name: Import project and export Android APK
-        env:
-          GODOT_ANDROID_KEYSTORE_DEBUG_PATH: ${{ env.HOME }}/.android/sac-debug.keystore
-          GODOT_ANDROID_KEYSTORE_DEBUG_USER: sacdebug
-          GODOT_ANDROID_KEYSTORE_DEBUG_PASSWORD: android
         run: |
           mkdir -p Godot/build
           godot-bin/Godot_v4.4.1-stable_linux.x86_64 --headless --editor --path Godot --quit
