@@ -1,0 +1,27 @@
+name: SAC Godot Validation
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'Godot/**'
+      - '.github/workflows/sac-godot-validation.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: sac-godot-validation
+  cancel-in-progress: true
+jobs:
+  validate:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Godot 4.4.1
+        run: |
+          curl -L --retry 3 -o godot.zip https://github.com/godotengine/godot/releases/download/4.4.1-stable/Godot_v4.4.1-stable_linux.x86_64.zip
+          unzip -q godot.zip -d godot-bin
+          chmod +x godot-bin/Godot_v4.4.1-stable_linux.x86_64
+      - name: Parse and import project
+        run: godot-bin/Godot_v4.4.1-stable_linux.x86_64 --headless --editor --path Godot --quit
+      - name: Launch smoke test
+        run: godot-bin/Godot_v4.4.1-stable_linux.x86_64 --headless --path Godot --quit-after 5
