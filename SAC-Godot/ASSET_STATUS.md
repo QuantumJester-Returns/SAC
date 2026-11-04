@@ -1,20 +1,24 @@
-# Recovered asset status
+# Recovered asset and prototype status
 
-| Asset | Intended location | Status |
-|---|---|---|
-| Original male base mesh GLB | `assets/characters/` | Available in the ChatGPT Library; binary transfer into this Git branch is still pending |
-| 42-clip retargeted animation GLB | `assets/animations/` | The original animation-library ZIP is not present in the accessible Library listing; the APK contains an imported Godot cache scene and QA reports |
-| Interactive still-sea shader | `shaders/interactive_still_sea.gdshader` | **Recovered and committed** from the v1.6.0 APK |
-| Still-sea ripple controller | `scripts/still_sea_controller.gd` | **Added**; awaits Godot 4.7.2 runtime validation and hookup to a water mesh |
-| 4K sky source texture | `assets/environment/` | APK contains an imported texture cache; original editable source is not confirmed |
-| Original arena scene | `scenes/` | APK contains packed scene data; clean editable reconstruction is required |
+| Asset / feature | Status |
+|---|---|
+| Original male base mesh GLB | Uploaded in this conversation and readable; binary not yet committed to Git |
+| 4K sky EXR | Uploaded in this conversation and readable; binary not yet committed to Git |
+| Original 42-clip retargeted animation library | Not required for the first prototype; intentionally deferred |
+| Original interactive still-sea shader | Recovered from the v1.6.0 APK and committed |
+| Still-sea ripple controller | Committed; not yet runtime-tested |
+| New open-sky arena prototype | Committed in `scripts/arena_bootstrap.gd` |
+| Landscape Android export preset | Committed |
+| Clean Android build workflow | Committed; no successful workflow run or APK yet |
 
-## Water behavior recovered
+## Reference target
+The supplied image is the visual target: vivid blue sky, high bright sun, distant clean horizon, deep blue reflective water, and two widely spaced fighters. The initial prototype approximates the environment with a procedural sky and directional light while the original EXR is waiting for binary integration.
 
-The original shader creates a radial travelling ripple from a world-space impact point. Its exported parameters control ripple origin, age, strength, speed, frequency, and width. The controller added in this branch exposes `trigger_water_reaction(world_position, strength)` and advances the ripple age.
+## Player scale
+Target height: 6.2 ft = 1.88976 m. The current plain capsule is a temporary scale and movement proxy.
 
-## Binary asset transfer limitation
+## Deferred
+The previous 42-animation library is deliberately not blocking the initial scene. It can be integrated later if the source becomes available and the character rig passes validation.
 
-The original character GLB and v1.6.0 APK are available in the user's Library and were inspected. The GitHub write connection available for this task supports UTF-8 text files and Git blobs, but does not provide a binary upload or Git LFS upload action. The shader is text and has therefore been committed directly. The GLB and animation binary files have **not** been falsely marked as committed.
-
-The project must not be described as playable until the model and animation assets are present and a Godot 4.7.2 import and runtime test succeeds.
+## Validation
+No Godot executable is installed in the current container. Source commits are verified on the clean branch, but scene import, shader compilation, runtime behavior, and APK installation have not yet been verified. Never treat a workflow definition or source commit as a successful build.

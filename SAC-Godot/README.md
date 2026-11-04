@@ -1,36 +1,25 @@
 # Sea Among The Clouds: clean Godot recovery
 
-This project is a new, isolated Godot project targeting **Godot 4.7.2** with the **GL Compatibility** renderer.
+A new, isolated Godot 4.7.2 project using the GL Compatibility renderer.
 
-## Separation rule
+## Separation rules
+- All new project work lives in `SAC-Godot/`.
+- The legacy `Godot/` directory is not used, copied from, or modified.
+- The discarded Unreal project is not used.
+- The old APK workflow is not used.
 
-- This project lives in `SAC-Godot/`.
-- The legacy `Godot/` directory is not used as a source, dependency, build input, or destination.
-- The Unreal project is not used.
-- No legacy project files are copied into this project.
+## Current prototype
+The entry scene now creates a bright open-sky arena, a high directional sun, a broad reflective sea surface using the recovered still-sea shader, a 6.2-foot (1.88976 m) temporary player capsule, a distant opponent marker, a third-person camera, and basic on-screen directional controls.
 
-## Recovery priorities
+The Android export preset and a separate clean-build workflow target landscape orientation and arm64.
 
-1. Preserve the recovered character model.
-2. Reconstruct the arena and its visual environment from the recovered APK references.
-3. Restore the original interactive still-sea water behavior.
-4. Integrate and verify the 42-clip retargeted animation library.
-5. Establish a reproducible Android export only after the clean project is validated.
+## Important status
+This is an initial playable-scene prototype, **not yet a verified APK**. The source has been committed, but Godot 4.7.2 is not installed in the current working container, and the GitHub Actions workflow has not yet produced a run. The scene therefore still needs engine import, parser/runtime validation, and an Android export test.
 
-## Current state
+The uploaded original character GLB and 4K sky EXR are available in this conversation, but their binary contents have not yet been transferred into the Git branch. The current player is deliberately a plain capsule placeholder, not a claim that the original model is integrated.
 
-This commit establishes the isolated project boundary and a minimal entry scene. It is **not yet the recovered playable game**. The original APK contains compiled scripts and packed scene data rather than a complete editable project. Recovered source assets must be added and validated before gameplay reconstruction.
-
-## Expected layout
-
-- `assets/characters/`: original character source assets
-- `assets/animations/`: retargeted animation library
-- `assets/environment/`: recovered sky and arena source assets
-- `shaders/`: recovered water shader source
-- `scenes/`: clean editable Godot scenes
-- `scripts/`: clean editable Godot scripts
-- `recovery_reference/`: read-only reference material; never used as project source code
-
-## Build policy
-
-No Android workflow is attached to this project yet. In particular, changes here must not trigger the legacy APK workflow, which targets `Godot/` and Godot 4.4.1.
+## Next integration targets
+- Import the original character GLB and confirm its real-world height is 1.88976 m.
+- Bring in the uploaded 4K sky EXR and tune the sky/sun to the supplied reference.
+- Refine water reflections and the shoreline-free horizon after a device render test.
+- Replace the temporary capsule with the original un-clothed base mesh.
