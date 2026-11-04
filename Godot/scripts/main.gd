@@ -2,21 +2,20 @@ extends Node3D
 
 const WATER_SHADER = preload("res://shaders/ocean.gdshader")
 const CHARACTER_PATH := "res://assets/characters/KnightCaptain.glb"
-const SKY_PATH := "res://assets/sky/kloppenheim_05_puresky_2k.hdr"
-const CLOUD_PATHS := [
-    "res://assets/clouds/Cloud001.glb",
-    "res://assets/clouds/Cloud002.glb",
-    "res://assets/clouds/Cloud003.glb"
-]
+const MAX_WATER_IMPACTS := 8
 
 var player: CharacterBody3D
 var water_material: ShaderMaterial
 var impact_clock := 0.0
+var step_clock := 0.0
+var next_impact_slot := 0
+var impact_buffer := PackedVector4Array()
 
 func _ready() -> void:
+    for i in range(MAX_WATER_IMPACTS):
+        impact_buffer.append(Vector4(0.0, 0.0, -1000.0, 0.0))
     _build_sky()
     _build_ocean()
-    _build_clouds()
     _build_player()
     _build_mobile_controls()
     _build_lighting()
@@ -25,28 +24,35 @@ func _process(delta: float) -> void:
     impact_clock += delta
     if water_material:
         water_material.set_shader_parameter("time_seconds", impact_clock)
+    # Footfalls, not screen taps, disturb the otherwise still water.
+    if player:
+        var horizontal_speed := Vector2(player.velocity.x, player.velocity.z).length()
+        if horizontal_speed > 0.7:
+            step_clock += delta
+            if step_clock >= 0.42:
+                var strength := clampf(horizontal_speed / 5.5, 0.35, 1.25)
+                register_water_impact(player.global_position, strength)
+                step_clock = 0.0
+        else:
+            step_clock = 0.0
 
-func _unhandled_input(event: InputEvent) -> void:
-    if event is InputEventScreenTouch and event.pressed:
-        _make_ripple(Vector2(event.position.x / get_viewport().size.x, event.position.y / get_viewport().size.y))
-    elif event is InputEventMouseButton and event.pressed:
-        _make_ripple(Vector2(event.position.x / get_viewport().size.x, event.position.y / get_viewport().size.y))
+func register_water_impact(world_position: Vector3, strength: float = 1.0) -> void:
+    # Public impact entry point: any future character, prop, projectile or physics
+    # object can call this. Eight independent events can coexist on the surface.
+    if not water_material:
+        return
+    impact_buffer[next_impact_slot] = Vector4(
+        world_position.x,
+        world_position.z,
+        impact_clock,
+        clampf(strength, 0.0, 2.0)
+    )
+    next_impact_slot = (next_impact_slot + 1) % MAX_WATER_IMPACTS
+    water_material.set_shader_parameter("impact_events", impact_buffer)
 
-func _make_ripple(screen_uv: Vector2) -> void:
-    if not player or not water_material:
-        return
-    var camera := player.get_node("Camera3D") as Camera3D
-    var pixel := screen_uv * Vector2(get_viewport().size)
-    var origin := camera.project_ray_origin(pixel)
-    var direction := camera.project_ray_normal(pixel)
-    if absf(direction.y) < 0.0001:
-        return
-    var distance := -origin.y / direction.y
-    if distance > 0.0:
-        var hit := origin + direction * distance
-        water_material.set_shader_parameter("impact_position", Vector2(hit.x, hit.z))
-        water_material.set_shader_parameter("impact_time", impact_clock)
-        water_material.set_shader_parameter("impact_strength", 1.0)
+func _on_water_body_entered(body: Node3D) -> void:
+    if body != player:
+        register_water_impact(body.global_position, 1.4)
 
 func _build_sky() -> void:
     var world := WorldEnvironment.new()
@@ -54,7 +60,7 @@ func _build_sky() -> void:
     environment.background_mode = Environment.BG_SKY
     var sky := Sky.new()
     var panorama := PanoramaSkyMaterial.new()
-    var sky_texture := load(SKY_PATH) as Texture2D
+    var sky_texture := load("res://assets/sky/kloppenheim_05_puresky_2k.hdr") as Texture2D
     if sky_texture:
         panorama.panorama = sky_texture
         sky.sky_material = panorama
@@ -92,8 +98,10 @@ func _build_ocean() -> void:
     ocean.mesh = plane
     water_material = ShaderMaterial.new()
     water_material.shader = WATER_SHADER
+    water_material.set_shader_parameter("impact_events", impact_buffer)
     ocean.material_override = water_material
     add_child(ocean)
+
     var water_floor := StaticBody3D.new()
     water_floor.name = "WaterLevelCollision"
     var floor_shape := CollisionShape3D.new()
@@ -104,20 +112,19 @@ func _build_ocean() -> void:
     water_floor.add_child(floor_shape)
     add_child(water_floor)
 
-func _build_clouds() -> void:
-    var rng := RandomNumberGenerator.new()
-    rng.seed = 7319
-    for i in range(24):
-        var cloud_scene := load(CLOUD_PATHS[rng.randi_range(0, CLOUD_PATHS.size() - 1)]) as PackedScene
-        if not cloud_scene:
-            push_warning("Unable to load cloud model: " + CLOUD_PATHS[rng.randi_range(0, CLOUD_PATHS.size() - 1)])
-            continue
-        var cloud := cloud_scene.instantiate() as Node3D
-        cloud.name = "VolumetricCloud_%02d" % i
-        cloud.position = Vector3(rng.randf_range(-900.0, 900.0), rng.randf_range(95.0, 245.0), rng.randf_range(-1250.0, -250.0))
-        var size := rng.randf_range(0.7, 2.1)
-        cloud.scale = Vector3.ONE * size
-        add_child(cloud)
+    # Any physics body entering the water surface creates its own impact event.
+    var interaction_area := Area3D.new()
+    interaction_area.name = "WaterInteractionArea"
+    interaction_area.collision_layer = 0
+    interaction_area.collision_mask = 1
+    var area_shape := CollisionShape3D.new()
+    var area_box := BoxShape3D.new()
+    area_box.size = Vector3(4000.0, 0.24, 4000.0)
+    area_shape.shape = area_box
+    area_shape.position.y = 0.08
+    interaction_area.add_child(area_shape)
+    interaction_area.body_entered.connect(_on_water_body_entered)
+    add_child(interaction_area)
 
 func _build_player() -> void:
     player = CharacterBody3D.new()
@@ -129,10 +136,12 @@ func _build_player() -> void:
     collider.shape = capsule
     collider.position.y = 0.86
     player.add_child(collider)
+
     var character_scene := load(CHARACTER_PATH) as PackedScene
     if character_scene:
         var character := character_scene.instantiate()
         character.name = "CharacterModel"
+        character.scale = Vector3.ONE * 2.0
         player.add_child(character)
         var animation_player := _find_animation_player(character)
         if animation_player:
@@ -143,12 +152,13 @@ func _build_player() -> void:
                 animation_player.play(animations[0])
     else:
         push_error("SAC 3D character GLB missing: " + CHARACTER_PATH)
+
     var camera := Camera3D.new()
     camera.name = "Camera3D"
-    camera.position = Vector3(0.0, 3.0, 7.2)
-    camera.rotation_degrees = Vector3(-17.0, 0.0, 0.0)
+    camera.position = Vector3(0.0, 3.1, 5.2)
+    camera.rotation_degrees = Vector3(-22.0, 0.0, 0.0)
     camera.current = true
-    camera.fov = 72.0
+    camera.fov = 65.0
     player.add_child(camera)
     player.position = Vector3(0.0, 0.05, -8.0)
     player.set_script(load("res://scripts/player.gd"))
