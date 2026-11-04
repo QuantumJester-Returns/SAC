@@ -24,7 +24,6 @@ sky.sky_type='SINGLE_SCATTERING'
 sky.sun_elevation=radians(48)
 sky.sun_rotation=radians(225)
 sky.air_density=1.0
-sky.dust_density=0.7
 sky.ozone_density=1.0
 scene.world.node_tree.links.new(sky.outputs['Color'],bg.inputs['Color'])
 bg.inputs['Strength'].default_value=0.35
@@ -109,7 +108,6 @@ cam.data.lens=38
 scene.camera=cam
 
 # Render quality and denoising.
-scene.render.engine='CYCLES' if os.environ.get('SAC_RENDER_ENGINE')=='CYCLES' else 'BLENDER_EEVEE'
 if scene.render.engine=='CYCLES':
     scene.cycles.samples=24
     scene.cycles.use_denoising=True
