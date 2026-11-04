@@ -76,7 +76,7 @@ func _build_ocean() -> void:
     water_material = ShaderMaterial.new()
     water_material.shader = WATER_SHADER
     ocean.material_override = water_material
-    ocean.rotation_degrees.x = -90.0
+    # PlaneMesh is already horizontal in Godot (local XZ plane).
     ocean.position.y = 0.0
     add_child(ocean)
 
