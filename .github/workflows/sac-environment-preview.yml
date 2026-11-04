@@ -16,7 +16,7 @@ jobs:
       - name: Install Blender
         run: |
           sudo apt-get update
-          sudo apt-get install -y blender libegl1 libgl1 libxkbcommon0
+          sudo apt-get install -y blender python3-numpy libegl1 libgl1 libxkbcommon0
           blender --version
       - name: Generate and render SAC environment
         run: |
