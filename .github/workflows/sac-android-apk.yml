@@ -1,0 +1,79 @@
+name: SAC Android APK
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'Godot/**'
+      - '.github/workflows/sac-android-apk.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+concurrency:
+  group: sac-android-apk
+  cancel-in-progress: true
+jobs:
+  android:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Install Android SDK components
+        run: |
+          yes | sdkmanager --licenses
+          sdkmanager "platform-tools" "build-tools;34.0.0" "platforms;android-34" "cmdline-tools;latest" "cmake;3.10.2.4988404" "ndk;23.2.8568313"
+
+      - name: Install Godot 4.4.1 and Android export templates
+        run: |
+          curl -L --retry 3 -o godot.zip https://github.com/godotengine/godot/releases/download/4.4.1-stable/Godot_v4.4.1-stable_linux.x86_64.zip
+          unzip -q godot.zip -d godot-bin
+          chmod +x godot-bin/Godot_v4.4.1-stable_linux.x86_64
+          mkdir -p "$HOME/.local/share/godot/export_templates/4.4.1.stable"
+          curl -L --retry 3 -o templates.tpz https://github.com/godotengine/godot/releases/download/4.4.1-stable/Godot_v4.4.1-stable_export_templates.tpz
+          unzip -q templates.tpz -d template-unpack
+          cp -a template-unpack/templates/. "$HOME/.local/share/godot/export_templates/4.4.1.stable/"
+
+      - name: Prepare persistent debug signing key
+        uses: actions/cache@v4
+        with:
+          path: ~/.android/sac-debug.keystore
+          key: sac-android-debug-signing-v1
+
+      - name: Create signing key if cache is empty
+        run: |
+          mkdir -p "$HOME/.android"
+          if [ ! -f "$HOME/.android/sac-debug.keystore" ]; then
+            keytool -genkeypair -v -keystore "$HOME/.android/sac-debug.keystore" -storepass android -alias sacdebug -keypass android -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=SAC Debug,O=QuantumJester,C=BD"
+          fi
+
+      - name: Import project and export Android APK
+        env:
+          GODOT_ANDROID_KEYSTORE_DEBUG_PATH: ${{ env.HOME }}/.android/sac-debug.keystore
+          GODOT_ANDROID_KEYSTORE_DEBUG_USER: sacdebug
+          GODOT_ANDROID_KEYSTORE_DEBUG_PASSWORD: android
+        run: |
+          mkdir -p Godot/build
+          godot-bin/Godot_v4.4.1-stable_linux.x86_64 --headless --editor --path Godot --quit
+          godot-bin/Godot_v4.4.1-stable_linux.x86_64 --headless --path Godot --export-debug "Android" Godot/build/SAC-Android-debug.apk
+
+      - name: Verify APK output
+        run: |
+          test -s Godot/build/SAC-Android-debug.apk
+          ls -lh Godot/build/SAC-Android-debug.apk
+
+      - name: Upload installable APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: SAC-Android-debug
+          path: Godot/build/SAC-Android-debug.apk
+          if-no-files-found: error
+          retention-days: 14
