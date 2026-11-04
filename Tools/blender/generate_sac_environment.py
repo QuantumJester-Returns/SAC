@@ -6,7 +6,7 @@ from math import radians
 bpy.ops.object.select_all(action='SELECT')
 bpy.ops.object.delete(use_global=False)
 scene=bpy.context.scene
-scene.render.engine='CYCLES' if os.environ.get('SAC_RENDER_ENGINE')=='CYCLES' else 'BLENDER_EEVEE_NEXT'
+scene.render.engine='CYCLES' if os.environ.get('SAC_RENDER_ENGINE')=='CYCLES' else 'BLENDER_EEVEE'
 scene.render.resolution_x=1280
 scene.render.resolution_y=720
 scene.render.resolution_percentage=100
@@ -109,7 +109,7 @@ cam.data.lens=38
 scene.camera=cam
 
 # Render quality and denoising.
-scene.render.engine='CYCLES' if os.environ.get('SAC_RENDER_ENGINE')=='CYCLES' else 'BLENDER_EEVEE_NEXT'
+scene.render.engine='CYCLES' if os.environ.get('SAC_RENDER_ENGINE')=='CYCLES' else 'BLENDER_EEVEE'
 if scene.render.engine=='CYCLES':
     scene.cycles.samples=24
     scene.cycles.use_denoising=True
