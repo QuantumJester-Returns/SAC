@@ -36,7 +36,9 @@ jobs:
             "Content/SourceAssets/Water/SAC_WaterRippleNormal.hlsl"
             "Docs/WATER_MATERIAL_IMPLEMENTATION.md"
             "Docs/ENVIRONMENT_MILESTONE_01.md"
-            "Docs/CLOUD_FIELD_ACTOR.md"
+            "Docs/CLOUD_FIELD_ACTOR.md",
+            "Docs/CLOUD_MESH_UPGRADE_02.md",
+            "Tools/generate_cloud_meshes.py"
           )
           for file in "${required_files[@]}"; do
             if [[ ! -s "$file" ]]; then
@@ -101,6 +103,19 @@ jobs:
           grep -Fq "InstanceComponent->AddInstance" "$source"
           grep -Fq "SetCollisionEnabled(ECollisionEnabled::NoCollision)" "$source"
           echo "Three deterministic, non-colliding cloud instance layers are present."
+
+
+      - name: Validate Blender cloud mesh generator
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -m py_compile Tools/generate_cloud_meshes.py
+          grep -Fq 'meta = bpy.data.metaballs.new' Tools/generate_cloud_meshes.py
+          grep -Fq 'bpy.ops.object.convert(target="MESH")' Tools/generate_cloud_meshes.py
+          grep -Fq 'SAC_CloudBank_02' Tools/generate_cloud_meshes.py
+          grep -Fq 'SAC_CloudTower_02' Tools/generate_cloud_meshes.py
+          grep -Fq 'SAC_CloudShelf_02' Tools/generate_cloud_meshes.py
+          echo "Blender generator syntax and three cloud definitions validated."
 
       - name: Confirm this is source validation, not an Unreal build
         shell: bash
