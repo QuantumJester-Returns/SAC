@@ -1,0 +1,202 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Sea Among The Clouds — World Study 01</title>
+  <style>
+    :root { color-scheme: dark; font-family: Inter, ui-sans-serif, system-ui, sans-serif; }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; width: 100%; height: 100%; overflow: hidden; background: #061b32; }
+    canvas { display: block; width: 100%; height: 100%; }
+    #hud { position: fixed; inset: 0; pointer-events: none; color: #eef8ff; }
+    .brand { position: absolute; top: 24px; left: 26px; text-shadow: 0 2px 18px #00101f; }
+    .brand strong { display: block; font-size: 12px; letter-spacing: .28em; font-weight: 650; }
+    .brand span { display: block; margin-top: 7px; color: #b9d7e8; font-size: 10px; letter-spacing: .2em; }
+    .hint { position: absolute; left: 26px; bottom: 24px; max-width: 290px; color: #d0e5f1; font-size: 11px; line-height: 1.65; text-shadow: 0 2px 12px #00101f; }
+    .hint b { color: white; font-weight: 650; }
+    .right { position: absolute; right: 26px; top: 24px; text-align: right; color: #c8e0ed; font-size: 10px; letter-spacing: .16em; }
+    .dot { display: inline-block; width: 6px; height: 6px; margin: 0 7px 1px 0; border-radius: 50%; background: #8de2d4; box-shadow: 0 0 12px #8de2d4; }
+    @media (max-width: 600px) { .brand { top: 17px; left: 17px; } .right { top: 18px; right: 17px; } .hint { left: 17px; bottom: 17px; max-width: 245px; } }
+  </style>
+  <script type="importmap">
+    { "imports": { "three": "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js", "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/" } }
+  </script>
+</head>
+<body>
+  <div id="hud">
+    <div class="brand"><strong>SEA AMONG THE CLOUDS</strong><span>WORLD STUDY 01 · THE FIRST HORIZON</span></div>
+    <div class="right"><span class="dot"></span>ENVIRONMENT PROTOTYPE</div>
+    <div class="hint"><b>Explore the horizon.</b><br>Drag to look around · Scroll to move closer · Right-drag to pan<br><span style="opacity:.7">A first visual study — not the final Unreal environment.</span></div>
+  </div>
+  <script type="module">
+    import * as THREE from 'three';
+    import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color(0x8dbbd0);
+    scene.fog = new THREE.FogExp2(0x9bc6d5, 0.00062);
+
+    const camera = new THREE.PerspectiveCamera(58, innerWidth / innerHeight, 0.1, 1800);
+    camera.position.set(0, 33, 118);
+
+    const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
+    renderer.setPixelRatio(Math.min(devicePixelRatio, 1.7));
+    renderer.setSize(innerWidth, innerHeight);
+    renderer.outputColorSpace = THREE.SRGBColorSpace;
+    renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    renderer.toneMappingExposure = 1.12;
+    document.body.appendChild(renderer.domElement);
+
+    const controls = new OrbitControls(camera, renderer.domElement);
+    controls.target.set(0, 13, -65);
+    controls.enableDamping = true;
+    controls.dampingFactor = 0.045;
+    controls.minDistance = 24;
+    controls.maxDistance = 360;
+    controls.maxPolarAngle = Math.PI * 0.49;
+    controls.minPolarAngle = 0.12;
+
+    scene.add(new THREE.HemisphereLight(0xc8edff, 0x17364b, 1.15));
+    const sun = new THREE.DirectionalLight(0xffe5bd, 3.0);
+    sun.position.set(-115, 145, -170);
+    scene.add(sun);
+
+    // Atmospheric sky dome: a restrained vertical gradient with a bright horizon.
+    const skyGeo = new THREE.SphereGeometry(850, 48, 32);
+    const skyMat = new THREE.ShaderMaterial({
+      side: THREE.BackSide,
+      depthWrite: false,
+      uniforms: {
+        topColor: { value: new THREE.Color(0x17466e) },
+        middleColor: { value: new THREE.Color(0x6ea8c2) },
+        horizonColor: { value: new THREE.Color(0xd4e8e7) },
+        sunDirection: { value: sun.position.clone().normalize() }
+      },
+      vertexShader: `varying vec3 vWorldDirection; void main(){ vec4 p=modelMatrix*vec4(position,1.0); vWorldDirection=normalize(p.xyz-cameraPosition); gl_Position=projectionMatrix*viewMatrix*p; }`,
+      fragmentShader: `uniform vec3 topColor; uniform vec3 middleColor; uniform vec3 horizonColor; uniform vec3 sunDirection; varying vec3 vWorldDirection; void main(){ float h=normalize(vWorldDirection).y; float t=smoothstep(-0.12,0.72,h); vec3 c=mix(horizonColor,middleColor,smoothstep(-0.18,0.22,h)); c=mix(c,topColor,smoothstep(0.18,0.82,h)); float glow=pow(max(dot(normalize(vWorldDirection),normalize(sunDirection)),0.0),24.0); c+=vec3(1.0,0.72,0.43)*glow*0.32; gl_FragColor=vec4(c,1.0); }`
+    });
+    const sky = new THREE.Mesh(skyGeo, skyMat);
+    sky.position.y = 0;
+    scene.add(sky);
+
+    // Water surface: broad, low-amplitude waves and sky-coloured Fresnel reflections.
+    const waterGeo = new THREE.PlaneGeometry(1800, 1800, 220, 220);
+    waterGeo.rotateX(-Math.PI / 2);
+    const waterMat = new THREE.ShaderMaterial({
+      uniforms: {
+        time: { value: 0 },
+        cameraPositionLocal: { value: camera.position.clone() },
+        deepColor: { value: new THREE.Color(0x07314b) },
+        shallowColor: { value: new THREE.Color(0x28758a) },
+        sunDirection: { value: sun.position.clone().normalize() }
+      },
+      vertexShader: `
+        uniform float time; varying vec3 vWorld; varying vec3 vNormal;
+        void main(){
+          vec3 p=position;
+          float a=sin(p.x*0.027+time*0.42)*0.34;
+          float b=sin(p.y*0.019-time*0.31)*0.24;
+          float c=sin((p.x+p.y)*0.012+time*0.22)*0.30;
+          p.z += a+b+c;
+          vec4 world=modelMatrix*vec4(p,1.0);
+          vWorld=world.xyz;
+          vNormal=normalize(mat3(modelMatrix)*vec3(-0.027*cos(p.x*0.027+time*0.42)*0.34,-0.019*cos(p.y*0.019-time*0.31)*0.24,1.0));
+          gl_Position=projectionMatrix*viewMatrix*world;
+        }`,
+      fragmentShader: `
+        uniform vec3 deepColor; uniform vec3 shallowColor; uniform vec3 sunDirection; uniform vec3 cameraPositionLocal; uniform float time;
+        varying vec3 vWorld; varying vec3 vNormal;
+        void main(){
+          vec3 N=normalize(vNormal); vec3 V=normalize(cameraPosition-vWorld);
+          float fresnel=pow(1.0-max(dot(N,V),0.0),3.2);
+          float facing=max(dot(N,normalize(sunDirection)),0.0);
+          float glint=pow(max(dot(reflect(-normalize(sunDirection),N),V),0.0),90.0);
+          float bands=0.5+0.5*sin(vWorld.x*0.022+vWorld.z*0.014+time*0.25);
+          vec3 base=mix(deepColor,shallowColor,0.22+bands*0.12);
+          vec3 reflected=mix(vec3(0.12,0.34,0.43),vec3(0.56,0.72,0.74),0.34+fresnel*0.55);
+          vec3 color=mix(base,reflected,fresnel*0.72);
+          color += vec3(1.0,0.78,0.52)*glint*0.75;
+          color += vec3(0.10,0.22,0.25)*facing*0.10;
+          gl_FragColor=vec4(color,1.0);
+          #include <tonemapping_fragment>
+          #include <colorspace_fragment>
+        }`,
+      transparent: false
+    });
+    const water = new THREE.Mesh(waterGeo, waterMat);
+    water.position.y = 0;
+    scene.add(water);
+
+    // Procedural cloud puffs. Their soft lighting and layered placement sell depth.
+    const cloudMaterial = new THREE.MeshStandardMaterial({
+      color: 0xeaf4f2, roughness: 0.96, metalness: 0,
+      transparent: true, opacity: 0.88, flatShading: false
+    });
+    const cloudShadowMaterial = new THREE.MeshStandardMaterial({
+      color: 0x8baebd, roughness: 1, transparent: true, opacity: 0.18
+    });
+    const cloudGroups = [];
+    function makeCloud(x, y, z, scale, seed) {
+      const group = new THREE.Group();
+      const rand = (n) => { const v=Math.sin(n*127.1+seed*311.7)*43758.5453; return v-Math.floor(v); };
+      const count = 8 + Math.floor(rand(1)*7);
+      for (let i=0;i<count;i++) {
+        const r = 5.5 + rand(i+2)*7.5;
+        const puff = new THREE.Mesh(new THREE.SphereGeometry(r, 16, 12), cloudMaterial);
+        const angle = i/count*Math.PI*2;
+        puff.position.set(Math.cos(angle)*(5+rand(i+10)*9), (rand(i+20)-0.5)*5, Math.sin(angle)*(4+rand(i+30)*6));
+        puff.scale.set(1.35, 0.64+rand(i+40)*0.34, 0.92);
+        group.add(puff);
+      }
+      const crown = new THREE.Mesh(new THREE.SphereGeometry(10, 18, 12), cloudMaterial);
+      crown.scale.set(1.8,0.72,1.12);
+      crown.position.y=3.2;
+      group.add(crown);
+      group.position.set(x,y,z);
+      group.scale.setScalar(scale);
+      group.userData.phase=seed*1.7;
+      cloudGroups.push(group);
+      scene.add(group);
+    }
+
+    // Foreground and middle-distance cloud banks float close to the water plane.
+    makeCloud(-110, 13, -45, 1.8, 1);
+    makeCloud(105, 17, -95, 1.45, 2);
+    makeCloud(-220, 11, -210, 2.2, 3);
+    makeCloud(245, 15, -260, 1.9, 4);
+    makeCloud(-35, 22, -390, 2.5, 5);
+    makeCloud(360, 18, -520, 2.8, 6);
+    makeCloud(-390, 16, -610, 2.6, 7);
+    makeCloud(30, 14, 115, 1.25, 8);
+    makeCloud(-310, 20, 90, 1.7, 9);
+
+    // A distant sun disc gives the horizon a clear focal point.
+    const sunDisc = new THREE.Mesh(
+      new THREE.SphereGeometry(13, 24, 16),
+      new THREE.MeshBasicMaterial({ color: 0xffe5bd })
+    );
+    sunDisc.position.set(-310, 190, -690);
+    scene.add(sunDisc);
+
+    const clock = new THREE.Clock();
+    function animate() {
+      requestAnimationFrame(animate);
+      const t=clock.getElapsedTime();
+      waterMat.uniforms.time.value=t;
+      waterMat.uniforms.cameraPositionLocal.value.copy(camera.position);
+      cloudGroups.forEach((g)=>{ g.position.x += Math.sin(t*0.035+g.userData.phase)*0.002; });
+      controls.update();
+      renderer.render(scene,camera);
+    }
+    animate();
+
+    addEventListener('resize',()=>{
+      camera.aspect=innerWidth/innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(innerWidth,innerHeight);
+      renderer.setPixelRatio(Math.min(devicePixelRatio,1.7));
+    });
+  </script>
+</body>
+</html>
