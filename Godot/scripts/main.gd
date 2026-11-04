@@ -2,7 +2,7 @@ extends Node3D
 
 const WATER_SHADER = preload("res://shaders/ocean.gdshader")
 const CHARACTER_PATH := "res://assets/characters/KnightCaptain.glb"
-const SKY_PATH := "res://assets/sky/kloppenheim_05_puresky_2k.jpg"
+const SKY_PATH := "res://assets/sky/kloppenheim_05_puresky_2k.hdr"
 const CLOUD_PATHS := [
     "res://assets/clouds/Cloud001.glb",
     "res://assets/clouds/Cloud002.glb",
@@ -59,6 +59,7 @@ func _build_sky() -> void:
         panorama.panorama = sky_texture
         sky.sky_material = panorama
     else:
+        push_warning("SAC sky HDRI missing; using procedural blue-sky fallback")
         var fallback := ProceduralSkyMaterial.new()
         fallback.sky_top_color = Color(0.015, 0.12, 0.42)
         fallback.sky_horizon_color = Color(0.22, 0.55, 0.88)
@@ -109,6 +110,7 @@ func _build_clouds() -> void:
     for i in range(24):
         var cloud_scene := load(CLOUD_PATHS[rng.randi_range(0, CLOUD_PATHS.size() - 1)]) as PackedScene
         if not cloud_scene:
+            push_warning("Unable to load cloud model: " + CLOUD_PATHS[rng.randi_range(0, CLOUD_PATHS.size() - 1)])
             continue
         var cloud := cloud_scene.instantiate() as Node3D
         cloud.name = "VolumetricCloud_%02d" % i
@@ -134,10 +136,13 @@ func _build_player() -> void:
         player.add_child(character)
         var animation_player := _find_animation_player(character)
         if animation_player:
-            if animation_player.has_animation("Idle"):
+            var animations := animation_player.get_animation_list()
+            if animations.has("Idle"):
                 animation_player.play("Idle")
-            elif animation_player.get_animation_list().size() > 0:
-                animation_player.play(animation_player.get_animation_list()[0])
+            elif animations.size() > 0:
+                animation_player.play(animations[0])
+    else:
+        push_error("SAC 3D character GLB missing: " + CHARACTER_PATH)
     var camera := Camera3D.new()
     camera.name = "Camera3D"
     camera.position = Vector3(0.0, 3.0, 7.2)
