@@ -3,6 +3,7 @@ extends Node3D
 const WATER_SHADER = preload("res://shaders/ocean.gdshader")
 const CHARACTER_PATH := "res://assets/characters/KnightCaptain.glb"
 const MAX_WATER_IMPACTS := 8
+const TARGET_CHARACTER_HEIGHT := 1.88 # 6 ft 2 in, in metres
 
 var player: CharacterBody3D
 var water_material: ShaderMaterial
@@ -10,6 +11,9 @@ var impact_clock := 0.0
 var step_clock := 0.0
 var next_impact_slot := 0
 var impact_buffer := PackedVector4Array()
+var jog_button: Button
+var joystick_knob: Panel
+var joystick_touch_index := -1
 
 func _ready() -> void:
     for i in range(MAX_WATER_IMPACTS):
@@ -55,8 +59,7 @@ func _on_water_body_entered(body: Node3D) -> void:
         register_water_impact(body.global_position, 1.4)
 
 func _build_sky() -> void:
-    # A clean procedural sky replaces the HDRI panorama, whose baked landscape
-    # was creating unwanted silhouettes and clutter along the sea horizon.
+    # A clean procedural sky avoids baked land silhouettes on the horizon.
     var world := WorldEnvironment.new()
     var environment := Environment.new()
     environment.background_mode = Environment.BG_SKY
@@ -127,20 +130,21 @@ func _build_ocean() -> void:
 func _build_player() -> void:
     player = CharacterBody3D.new()
     player.name = "Explorer"
-    var collider := CollisionShape3D.new()
-    var capsule := CapsuleShape3D.new()
-    capsule.radius = 0.34
-    capsule.height = 1.72
-    collider.shape = capsule
-    collider.position.y = 0.86
-    player.add_child(collider)
 
     var character_scene := load(CHARACTER_PATH) as PackedScene
+    var model_height := TARGET_CHARACTER_HEIGHT
     if character_scene:
         var character := character_scene.instantiate()
         character.name = "CharacterModel"
-        character.scale = Vector3.ONE * 6.2
         player.add_child(character)
+        var bounds: Array[AABB] = []
+        _collect_model_bounds(character, Transform3D.IDENTITY, bounds)
+        if not bounds.is_empty() and bounds[0].size.y > 0.01:
+            var model_scale := TARGET_CHARACTER_HEIGHT / bounds[0].size.y
+            character.scale = Vector3.ONE * model_scale
+            character.position.y = -bounds[0].position.y * model_scale
+        else:
+            push_warning("Could not measure character mesh; using its authored scale.")
         var animation_player := _find_animation_player(character)
         if animation_player:
             var animations := animation_player.get_animation_list()
@@ -151,16 +155,37 @@ func _build_player() -> void:
     else:
         push_error("SAC 3D character GLB missing: " + CHARACTER_PATH)
 
+    var collider := CollisionShape3D.new()
+    var capsule := CapsuleShape3D.new()
+    capsule.radius = 0.30
+    capsule.height = model_height
+    collider.shape = capsule
+    collider.position.y = model_height * 0.5
+    player.add_child(collider)
+
     var camera := Camera3D.new()
     camera.name = "Camera3D"
-    camera.position = Vector3(0.0, 7.0, 11.5)
-    camera.rotation_degrees = Vector3(-25.0, 0.0, 0.0)
+    camera.position = Vector3(0.0, 2.65, 5.4)
+    camera.rotation_degrees = Vector3(-18.0, 0.0, 0.0)
     camera.current = true
-    camera.fov = 65.0
+    camera.fov = 70.0
     player.add_child(camera)
     player.position = Vector3(0.0, 0.05, -8.0)
     player.set_script(load("res://scripts/player.gd"))
     add_child(player)
+
+func _collect_model_bounds(node: Node, parent_transform: Transform3D, bounds: Array[AABB]) -> void:
+    var node_transform := parent_transform
+    if node is Node3D:
+        node_transform = parent_transform * (node as Node3D).transform
+    if node is VisualInstance3D:
+        var mesh_bounds := (node as VisualInstance3D).get_aabb() * node_transform
+        if bounds.is_empty():
+            bounds.append(mesh_bounds)
+        else:
+            bounds[0] = bounds[0].merge(mesh_bounds)
+    for child in node.get_children():
+        _collect_model_bounds(child, node_transform, bounds)
 
 func _find_animation_player(node: Node) -> AnimationPlayer:
     if node is AnimationPlayer:
@@ -179,32 +204,108 @@ func _build_mobile_controls() -> void:
     root.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
     root.mouse_filter = Control.MOUSE_FILTER_PASS
     layer.add_child(root)
+
     var view_size := get_viewport().get_visible_rect().size
-    var h := view_size.y
-    var directions := [
-        {"label": "▲", "direction": Vector2(0, -1), "position": Vector2(92, h - 194)},
-        {"label": "▼", "direction": Vector2(0, 1), "position": Vector2(92, h - 66)},
-        {"label": "◀", "direction": Vector2(-1, 0), "position": Vector2(28, h - 130)},
-        {"label": "▶", "direction": Vector2(1, 0), "position": Vector2(156, h - 130)}
-    ]
-    for item in directions:
-        var button := Button.new()
-        button.text = item.label
-        button.position = item.position
-        button.size = Vector2(58, 58)
-        button.focus_mode = Control.FOCUS_NONE
-        button.add_theme_font_size_override("font_size", 25)
-        button.modulate = Color(0.82, 0.91, 1.0, 0.82)
-        var direction: Vector2 = item.direction
-        button.button_down.connect(func(): player.set_touch_direction(direction, true))
-        button.button_up.connect(func(): player.set_touch_direction(direction, false))
-        root.add_child(button)
-    var hint := Label.new()
-    hint.text = "DRAG RIGHT SIDE TO LOOK"
-    hint.position = Vector2(view_size.x - 300, h - 42)
-    hint.add_theme_font_size_override("font_size", 15)
-    hint.modulate = Color(1.0, 1.0, 1.0, 0.72)
-    root.add_child(hint)
+    var screen_h := view_size.y
+    var screen_w := view_size.x
+
+    # Free-Fire-style movement zone: a floating-feel joystick on the left.
+    var joystick := Panel.new()
+    joystick.name = "MovementJoystick"
+    joystick.position = Vector2(34.0, screen_h - 214.0)
+    joystick.size = Vector2(180.0, 180.0)
+    joystick.mouse_filter = Control.MOUSE_FILTER_STOP
+    var base_style := StyleBoxFlat.new()
+    base_style.bg_color = Color(0.08, 0.16, 0.25, 0.42)
+    base_style.border_color = Color(0.72, 0.86, 1.0, 0.48)
+    base_style.set_border_width_all(2)
+    base_style.set_corner_radius_all(90)
+    joystick.add_theme_stylebox_override("panel", base_style)
+    root.add_child(joystick)
+
+    joystick_knob = Panel.new()
+    joystick_knob.name = "JoystickKnob"
+    joystick_knob.size = Vector2(66.0, 66.0)
+    joystick_knob.position = Vector2(57.0, 57.0)
+    joystick_knob.mouse_filter = Control.MOUSE_FILTER_IGNORE
+    var knob_style := StyleBoxFlat.new()
+    knob_style.bg_color = Color(0.72, 0.86, 1.0, 0.78)
+    knob_style.border_color = Color(1.0, 1.0, 1.0, 0.85)
+    knob_style.set_border_width_all(2)
+    knob_style.set_corner_radius_all(40)
+    joystick_knob.add_theme_stylebox_override("panel", knob_style)
+    joystick.add_child(joystick_knob)
+
+    joystick.gui_input.connect(func(event: InputEvent):
+        if event is InputEventScreenTouch:
+            var touch := event as InputEventScreenTouch
+            if touch.pressed:
+                joystick_touch_index = touch.index
+                _update_joystick(touch.position)
+            elif touch.index == joystick_touch_index:
+                joystick_touch_index = -1
+                player.set_move_vector(Vector2.ZERO)
+                joystick_knob.position = Vector2(57.0, 57.0)
+        elif event is InputEventScreenDrag and (event as InputEventScreenDrag).index == joystick_touch_index:
+            _update_joystick((event as InputEventScreenDrag).position)
+        elif event is InputEventMouseButton:
+            var mouse := event as InputEventMouseButton
+            if mouse.button_index == MOUSE_BUTTON_LEFT:
+                if mouse.pressed:
+                    _update_joystick(mouse.position)
+                else:
+                    player.set_move_vector(Vector2.ZERO)
+                    joystick_knob.position = Vector2(57.0, 57.0)
+    )
+
+    var jump_button := _make_action_button(root, "JUMP", Vector2(screen_w - 112.0, screen_h - 190.0), Vector2(82.0, 82.0))
+    jump_button.pressed.connect(func(): player.jump())
+
+    var sprint_button := _make_action_button(root, "SPRINT", Vector2(screen_w - 222.0, screen_h - 94.0), Vector2(94.0, 62.0))
+    sprint_button.button_down.connect(func(): player.set_sprint(true))
+    sprint_button.button_up.connect(func(): player.set_sprint(false))
+
+    jog_button = _make_action_button(root, "JOG", Vector2(screen_w - 112.0, screen_h - 92.0), Vector2(82.0, 62.0))
+    jog_button.pressed.connect(_toggle_jog_mode)
+
+    var camera_hint := Label.new()
+    camera_hint.text = "SWIPE TO LOOK"
+    camera_hint.position = Vector2(screen_w * 0.57, screen_h - 34.0)
+    camera_hint.add_theme_font_size_override("font_size", 13)
+    camera_hint.modulate = Color(1.0, 1.0, 1.0, 0.62)
+    root.add_child(camera_hint)
+
+func _update_joystick(local_position: Vector2) -> void:
+    var center := Vector2(90.0, 90.0)
+    var offset := (local_position - center).limit_length(58.0)
+    joystick_knob.position = center + offset - joystick_knob.size * 0.5
+    player.set_move_vector(Vector2(offset.x / 58.0, offset.y / 58.0))
+
+func _make_action_button(parent: Control, caption: String, button_position: Vector2, button_size: Vector2) -> Button:
+    var button := Button.new()
+    button.text = caption
+    button.position = button_position
+    button.size = button_size
+    button.focus_mode = Control.FOCUS_NONE
+    button.add_theme_font_size_override("font_size", 15)
+    button.add_theme_color_override("font_color", Color(0.94, 0.98, 1.0))
+    button.add_theme_color_override("font_hover_color", Color.WHITE)
+    var style := StyleBoxFlat.new()
+    style.bg_color = Color(0.06, 0.14, 0.24, 0.72)
+    style.border_color = Color(0.65, 0.82, 1.0, 0.78)
+    style.set_border_width_all(2)
+    style.set_corner_radius_all(18)
+    button.add_theme_stylebox_override("normal", style)
+    var hover := style.duplicate() as StyleBoxFlat
+    hover.bg_color = Color(0.12, 0.25, 0.38, 0.88)
+    button.add_theme_stylebox_override("hover", hover)
+    button.add_theme_stylebox_override("pressed", hover)
+    parent.add_child(button)
+    return button
+
+func _toggle_jog_mode() -> void:
+    player.toggle_jog()
+    jog_button.text = "JOG" if player.jog_enabled else "WALK"
 
 func _notification(what: int) -> void:
     if what == NOTIFICATION_WM_CLOSE_REQUEST:
