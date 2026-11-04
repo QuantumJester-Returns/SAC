@@ -110,7 +110,7 @@ scene.camera=cam
 # Render quality and denoising.
 if scene.render.engine=='CYCLES':
     scene.cycles.samples=24
-    scene.cycles.use_denoising=True
+    scene.cycles.use_denoising=False  # Ubuntu Blender build lacks OpenImageDenoiser
 else:
     scene.eevee.taa_render_samples=32
 scene.render.filepath=os.environ.get('SAC_OUTPUT','/tmp/sac_environment.png')
