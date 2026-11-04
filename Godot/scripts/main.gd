@@ -1,7 +1,13 @@
 extends Node3D
 
 const WATER_SHADER = preload("res://shaders/ocean.gdshader")
-const CHARACTER_PATH := "res://assets/characters/male_base_mesh.glb"
+const CHARACTER_PATH := "res://assets/characters/KnightCaptain.glb"
+const SKY_PATH := "res://assets/sky/kloppenheim_05_puresky_2k.jpg"
+const CLOUD_PATHS := [
+    "res://assets/clouds/Cloud001.glb",
+    "res://assets/clouds/Cloud002.glb",
+    "res://assets/clouds/Cloud003.glb"
+]
 
 var player: CharacterBody3D
 var water_material: ShaderMaterial
@@ -47,13 +53,19 @@ func _build_sky() -> void:
     var environment := Environment.new()
     environment.background_mode = Environment.BG_SKY
     var sky := Sky.new()
-    var fallback := ProceduralSkyMaterial.new()
-    fallback.sky_top_color = Color(0.015, 0.12, 0.42)
-    fallback.sky_horizon_color = Color(0.22, 0.55, 0.88)
-    fallback.ground_bottom_color = Color(0.025, 0.08, 0.18)
-    fallback.ground_horizon_color = Color(0.20, 0.48, 0.72)
-    fallback.sun_angle_max = 12.0
-    sky.sky_material = fallback
+    var panorama := PanoramaSkyMaterial.new()
+    var sky_texture := load(SKY_PATH) as Texture2D
+    if sky_texture:
+        panorama.panorama = sky_texture
+        sky.sky_material = panorama
+    else:
+        var fallback := ProceduralSkyMaterial.new()
+        fallback.sky_top_color = Color(0.015, 0.12, 0.42)
+        fallback.sky_horizon_color = Color(0.22, 0.55, 0.88)
+        fallback.ground_bottom_color = Color(0.025, 0.08, 0.18)
+        fallback.ground_horizon_color = Color(0.20, 0.48, 0.72)
+        fallback.sun_angle_max = 12.0
+        sky.sky_material = fallback
     environment.sky = sky
     environment.ambient_light_source = Environment.AMBIENT_SOURCE_SKY
     environment.tonemap_mode = Environment.TONE_MAPPER_FILMIC
@@ -65,7 +77,7 @@ func _build_lighting() -> void:
     var sun := DirectionalLight3D.new()
     sun.name = "SAC_Sun"
     sun.rotation_degrees = Vector3(-38.0, -28.0, 0.0)
-    sun.light_energy = 1.15
+    sun.light_energy = 1.8
     sun.shadow_enabled = true
     add_child(sun)
 
@@ -92,31 +104,18 @@ func _build_ocean() -> void:
     add_child(water_floor)
 
 func _build_clouds() -> void:
-    var cloud_material := StandardMaterial3D.new()
-    cloud_material.albedo_color = Color(0.91, 0.95, 1.0, 0.88)
-    cloud_material.roughness = 1.0
-    cloud_material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
-    var cloud_mesh := SphereMesh.new()
-    cloud_mesh.radial_segments = 32
-    cloud_mesh.rings = 20
-    cloud_mesh.material = cloud_material
     var rng := RandomNumberGenerator.new()
     rng.seed = 7319
-    for i in range(58):
-        var bank := Node3D.new()
-        bank.name = "CloudBank_%02d" % i
-        var x := rng.randf_range(-1050.0, 1050.0)
-        var z := rng.randf_range(-1450.0, 400.0)
-        var base_y := rng.randf_range(115.0, 255.0)
-        var puffs := rng.randi_range(5, 10)
-        for j in range(puffs):
-            var puff := MeshInstance3D.new()
-            puff.mesh = cloud_mesh
-            puff.position = Vector3(rng.randf_range(-75.0, 75.0), rng.randf_range(-14.0, 22.0), rng.randf_range(-38.0, 38.0))
-            puff.scale = Vector3(rng.randf_range(30.0, 72.0), rng.randf_range(9.0, 18.0), rng.randf_range(24.0, 55.0))
-            bank.add_child(puff)
-        bank.position = Vector3(x, base_y, z)
-        add_child(bank)
+    for i in range(24):
+        var cloud_scene := load(CLOUD_PATHS[rng.randi_range(0, CLOUD_PATHS.size() - 1)]) as PackedScene
+        if not cloud_scene:
+            continue
+        var cloud := cloud_scene.instantiate() as Node3D
+        cloud.name = "VolumetricCloud_%02d" % i
+        cloud.position = Vector3(rng.randf_range(-900.0, 900.0), rng.randf_range(95.0, 245.0), rng.randf_range(-1250.0, -250.0))
+        var size := rng.randf_range(0.7, 2.1)
+        cloud.scale = Vector3.ONE * size
+        add_child(cloud)
 
 func _build_player() -> void:
     player = CharacterBody3D.new()
@@ -136,8 +135,6 @@ func _build_player() -> void:
         var animation_player := _find_animation_player(character)
         if animation_player and animation_player.has_animation("Armature|mixamo.com|Layer0"):
             animation_player.play("Armature|mixamo.com|Layer0")
-    else:
-        _build_temporary_humanoid(player)
     var camera := Camera3D.new()
     camera.name = "Camera3D"
     camera.position = Vector3(0.0, 3.0, 7.2)
@@ -148,47 +145,6 @@ func _build_player() -> void:
     player.position = Vector3(0.0, 0.05, -8.0)
     player.set_script(load("res://scripts/player.gd"))
     add_child(player)
-
-func _build_temporary_humanoid(parent: Node3D) -> void:
-    var cloth := StandardMaterial3D.new()
-    cloth.albedo_color = Color(0.12, 0.18, 0.28)
-    cloth.roughness = 0.92
-    var skin := StandardMaterial3D.new()
-    skin.albedo_color = Color(0.72, 0.55, 0.42)
-    skin.roughness = 0.9
-    var torso := MeshInstance3D.new()
-    var torso_mesh := CapsuleMesh.new()
-    torso_mesh.radius = 0.29
-    torso_mesh.height = 0.92
-    torso_mesh.material = cloth
-    torso.mesh = torso_mesh
-    torso.position.y = 1.12
-    parent.add_child(torso)
-    var head := MeshInstance3D.new()
-    var head_mesh := SphereMesh.new()
-    head_mesh.radius = 0.17
-    head_mesh.height = 0.34
-    head_mesh.material = skin
-    head.mesh = head_mesh
-    head.position.y = 1.72
-    parent.add_child(head)
-    for side in [-1.0, 1.0]:
-        var arm := MeshInstance3D.new()
-        var arm_mesh := CapsuleMesh.new()
-        arm_mesh.radius = 0.095
-        arm_mesh.height = 0.72
-        arm_mesh.material = cloth
-        arm.mesh = arm_mesh
-        arm.position = Vector3(side * 0.39, 1.15, 0.0)
-        parent.add_child(arm)
-        var leg := MeshInstance3D.new()
-        var leg_mesh := CapsuleMesh.new()
-        leg_mesh.radius = 0.12
-        leg_mesh.height = 0.82
-        leg_mesh.material = cloth
-        leg.mesh = leg_mesh
-        leg.position = Vector3(side * 0.16, 0.48, 0.0)
-        parent.add_child(leg)
 
 func _find_animation_player(node: Node) -> AnimationPlayer:
     if node is AnimationPlayer:
