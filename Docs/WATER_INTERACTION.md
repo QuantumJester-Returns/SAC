@@ -64,6 +64,10 @@ Combine the four events additively but clamp the final perturbation to avoid uns
 5. Four or more impacts: event slots recycle without stale ripples.
 6. Ripple expiry: material returns exactly to the calm baseline.
 
+## Material implementation
+
+See `Docs/WATER_MATERIAL_IMPLEMENTATION.md` for the material graph settings, exact parameter wiring, reflection guidance, and validation sequence. The Custom node source is `Content/SourceAssets/Water/SAC_WaterRippleNormal.hlsl`.
+
 ## Current limitation
 
 The C++ component has not yet been compiled in Unreal Editor. The master material and its parameter graph still need to be created and validated in the selected Unreal Engine version. This source is a project foundation, not a verified packaged feature.
