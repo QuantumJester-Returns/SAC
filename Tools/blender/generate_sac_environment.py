@@ -114,6 +114,38 @@ if scene.render.engine=='CYCLES':
 else:
     scene.eevee.taa_render_samples=32
 scene.render.filepath=os.environ.get('SAC_OUTPUT','/tmp/sac_environment.png')
+# Export reusable geometry for the UE5 import pipeline.
+# Keep the Blender study editable, but also deliver compact, separated GLB assets.
+out_dir=os.path.dirname(os.path.abspath(scene.render.filepath))
+os.makedirs(out_dir, exist_ok=True)
+cloud_objects=[o for o in scene.objects if o.type=='MESH' and o.name.startswith('SAC_Horizon_Cloud') or o.type=='MESH' and o.name.startswith('SAC_Mid_Cloud') or o.type=='MESH' and o.name.startswith('SAC_High_Cloud')]
+if not cloud_objects:
+    raise RuntimeError('No SAC cloud meshes were generated')
+bpy.ops.object.select_all(action='DESELECT')
+for obj in cloud_objects:
+    obj.select_set(True)
+bpy.context.view_layer.objects.active=cloud_objects[0]
+bpy.ops.object.join()
+clouds=bpy.context.object
+clouds.name='SAC_Cloud_Field_Combined'
+cloud_path=os.path.join(out_dir,'SAC_Cloud_Field.glb')
+bpy.ops.object.select_all(action='DESELECT')
+clouds.select_set(True)
+bpy.context.view_layer.objects.active=clouds
+bpy.ops.export_scene.gltf(filepath=cloud_path, export_format='GLB', use_selection=True, export_apply=True)
+
+ocean_path=os.path.join(out_dir,'SAC_Ocean_Surface.glb')
+bpy.ops.object.select_all(action='DESELECT')
+ocean.select_set(True)
+bpy.context.view_layer.objects.active=ocean
+bpy.ops.export_scene.gltf(filepath=ocean_path, export_format='GLB', use_selection=True, export_apply=True)
+
+# Save the editable source scene after the export objects have been consolidated.
+bpy.ops.object.select_all(action='DESELECT')
 bpy.ops.wm.save_as_mainfile(filepath=os.environ.get('SAC_BLEND','/tmp/SAC_Environment_Study.blend'))
 bpy.ops.render.render(write_still=True)
+for path in (cloud_path,ocean_path,scene.render.filepath):
+    if not os.path.isfile(path) or os.path.getsize(path)==0:
+        raise RuntimeError('Missing or empty SAC output: '+path)
+    print('SAC_OUTPUT_READY',path,os.path.getsize(path))
 print('SAC_RENDER_COMPLETE',scene.render.filepath)
