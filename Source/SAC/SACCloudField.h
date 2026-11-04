@@ -75,9 +75,7 @@ public:
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="SAC|Clouds|Variation", meta=(ClampMin="0.0", ClampMax="45.0"))
     float TiltVariationDegrees = 8.0f;
 
-#if WITH_EDITOR
     virtual void OnConstruction(const FTransform& Transform) override;
-#endif
 
 private:
     void RebuildCloudLayer(
