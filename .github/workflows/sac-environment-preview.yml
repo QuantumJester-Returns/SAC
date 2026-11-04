@@ -25,6 +25,7 @@ jobs:
           mkdir -p output
           SAC_RENDER_ENGINE=CYCLES SAC_OUTPUT="$PWD/output/SAC_Environment_Preview.png" SAC_BLEND="$PWD/output/SAC_Environment_Study.blend" blender -b -t 2 --python Tools/blender/generate_sac_environment.py
       - name: Publish generated source assets to repository
+        continue-on-error: true
         run: |
           mkdir -p Content/SourceAssets/Generated
           cp output/SAC_Cloud_Field.obj output/SAC_Cloud_Field.mtl Content/SourceAssets/Generated/
@@ -34,7 +35,15 @@ jobs:
           git add Content/SourceAssets/Generated/
           if ! git diff --cached --quiet; then
             git commit -m "Add generated SAC environment source assets"
-            git push
+            for attempt in 1 2 3; do
+              if git push origin HEAD:main; then
+                echo "SAC_SOURCE_ASSETS_PUBLISHED"
+                exit 0
+              fi
+              echo "::warning::Asset push attempt $attempt failed; retrying."
+              sleep 5
+            done
+            echo "::warning::Generated assets remain available in the workflow artifact; repository push did not succeed."
           fi
       - name: Check Unreal Engine availability
         shell: bash
@@ -45,6 +54,7 @@ jobs:
             echo "::notice::This GitHub-hosted runner does not have Unreal Engine installed. Blender preview is real; this job does not claim to compile or render the UE5 project."
           fi
       - uses: actions/upload-artifact@v4
+        if: always()
         with:
           name: SAC-Environment-Preview
           path: output/
