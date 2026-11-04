@@ -12,7 +12,7 @@ The 02 meshes are generated from Blender metaball surfaces, converted to smooth 
 
 ## Generate and import
 
-1. On a PC with Blender 3.6+, run `blender --background --python Tools/generate_cloud_meshes.py` from the repository root.
+1. On a PC with Blender 4.0+, run `blender --background --python Tools/generate_cloud_meshes.py` from the repository root.
 2. Import the three OBJ files from `Content/SourceAssets/Clouds/Generated/` into Unreal under `Content/Environment/Clouds/Source/`.
 3. Inspect normals and silhouette; create a soft, high-roughness, non-metallic cloud material.
 4. Assign bank/shelf/tower meshes to the corresponding mesh properties on `ASACCloudField`.
