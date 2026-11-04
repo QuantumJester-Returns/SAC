@@ -59,8 +59,8 @@ jobs:
             exit 1
           }
           for parameter in Origin Age Strength Speed Width; do
-            grep -Fq "TEXT("$parameter")" "$source" || {
-              echo "::error::C++ ripple component is missing parameter suffix $parameter"
+            grep -Fq "TEXT(\"${parameter}\")" "$source" || {
+              echo "::error::C++ ripple component is missing parameter suffix ${parameter}"
               exit 1
             }
           done
