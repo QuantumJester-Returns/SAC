@@ -58,3 +58,10 @@
 - Added an editor-facing setup guide for importing the ocean OBJ and assigning the future water master material.
 - Kept collision disabled by default so the ocean does not unexpectedly block the player before the water interaction design is settled.
 - This remains uncompiled C++ source; the Unreal material graph and imported `.uasset` files are still pending editor access.
+
+## 2026-11-04 — Water material implementation foundation
+
+- Added a Custom Material node HLSL source snippet for four concurrent expanding ripple rings.
+- Added the water master material specification: dielectric deep-blue surface, flat calm normal, world-space ripple normal perturbation, and renderer-specific reflection validation.
+- Documented exact parameter wiring to the existing C++ ripple component.
+- The shader snippet and material graph remain uncompiled/unverified until opened in the selected Unreal Engine 5 editor.
