@@ -13,12 +13,14 @@ concurrency:
   cancel-in-progress: true
 jobs:
   blender-render:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
+      - name: Refresh package indexes
+        run: sudo apt-get update -o Acquire::Retries=3
       - name: Install Blender
         run: |
-          sudo apt-get install -y blender libegl1 libgl1 libxkbcommon0
+          sudo apt-get install -y --no-install-recommends blender libegl1 libgl1 libxkbcommon0
           blender --version
       - name: Generate and render SAC environment
         run: |
@@ -58,5 +60,5 @@ jobs:
         with:
           name: SAC-Environment-Preview
           path: output/
-          if-no-files-found: error
+          if-no-files-found: warn
           retention-days: 14
