@@ -128,17 +128,17 @@ bpy.context.view_layer.objects.active=cloud_objects[0]
 bpy.ops.object.join()
 clouds=bpy.context.object
 clouds.name='SAC_Cloud_Field_Combined'
-cloud_path=os.path.join(out_dir,'SAC_Cloud_Field.glb')
+cloud_path=os.path.join(out_dir,'SAC_Cloud_Field.obj')
 bpy.ops.object.select_all(action='DESELECT')
 clouds.select_set(True)
 bpy.context.view_layer.objects.active=clouds
-bpy.ops.export_scene.gltf(filepath=cloud_path, export_format='GLB', use_selection=True, export_apply=True)
+bpy.ops.wm.obj_export(filepath=cloud_path, export_selected_objects=True, export_materials=True)
 
-ocean_path=os.path.join(out_dir,'SAC_Ocean_Surface.glb')
+ocean_path=os.path.join(out_dir,'SAC_Ocean_Surface.obj')
 bpy.ops.object.select_all(action='DESELECT')
 ocean.select_set(True)
 bpy.context.view_layer.objects.active=ocean
-bpy.ops.export_scene.gltf(filepath=ocean_path, export_format='GLB', use_selection=True, export_apply=True)
+bpy.ops.wm.obj_export(filepath=ocean_path, export_selected_objects=True, export_materials=True)
 
 # Save the editable source scene after the export objects have been consolidated.
 bpy.ops.object.select_all(action='DESELECT')
